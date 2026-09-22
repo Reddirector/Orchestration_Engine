@@ -1,3 +1,4 @@
+import sqlite3
 from orchestration_engine.models import RetryPolicy, Task, TaskState
 from orchestration_engine.transitions import can_transition, transition_task
 
@@ -22,11 +23,12 @@ def test_succeeded_to_running_is_not_allowed() -> None:
     assert can_transition(TaskState.SUCCEEDED, TaskState.RUNNING) is False
 
 
-def test_pending_to_ready_transition() -> None:
+def test_pending_to_ready_transition(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Test",
         description="Transition test",
         dependencies=[],
@@ -34,15 +36,16 @@ def test_pending_to_ready_transition() -> None:
         retry_policy=retry_policy,
     )
 
-    assert transition_task(task, TaskState.READY) is True
+    assert transition_task(task, TaskState.READY, conn, 0.0) is True
     assert task.state == TaskState.READY
 
 
-def test_pending_to_succeeded_transition_is_rejected() -> None:
+def test_pending_to_succeeded_transition_is_rejected(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Test",
         description="Transition test",
         dependencies=[],
@@ -50,7 +53,7 @@ def test_pending_to_succeeded_transition_is_rejected() -> None:
         retry_policy=retry_policy,
     )
 
-    assert transition_task(task, TaskState.SUCCEEDED) is False
+    assert transition_task(task, TaskState.SUCCEEDED, conn, 0.0) is False
     assert task.state == TaskState.PENDING
 
 

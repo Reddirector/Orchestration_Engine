@@ -4,11 +4,12 @@ from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow
 from orchestration_engine.runner import run_workflow
 
 
-def test_run_workflow_raises_on_invalid_workflow() -> None:
+def test_run_workflow_raises_on_invalid_workflow(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Self-dependent Task",
         description="Task depends on itself",
         state=TaskState.PENDING,
@@ -31,14 +32,16 @@ def test_run_workflow_raises_on_invalid_workflow() -> None:
             task_states,
             time_source=lambda: 0.0,
             task_runner=lambda task: True,
+            conn=conn,
         )
 
 
-def test_run_workflow_executes_task_via_callback() -> None:
+def test_run_workflow_executes_task_via_callback(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Simple Task",
         description="Should be executed via the callback",
         state=TaskState.PENDING,
@@ -63,16 +66,18 @@ def test_run_workflow_executes_task_via_callback() -> None:
         task_states,
         time_source=lambda: 0.0,
         task_runner=task_runner,
+        conn=conn,
     )
 
     assert task.state == TaskState.SUCCEEDED
 
 
-def test_run_workflow_retries_using_time_source() -> None:
+def test_run_workflow_retries_using_time_source(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Flaky Task",
         description="Fails once, then succeeds on retry",
         state=TaskState.PENDING,
@@ -106,16 +111,18 @@ def test_run_workflow_retries_using_time_source() -> None:
         task_states,
         time_source=time_source,
         task_runner=task_runner,
+        conn=conn,
     )
 
     assert task.state == TaskState.SUCCEEDED
 
 
-def test_run_workflow_marks_task_failed_on_runner_exception() -> None:
+def test_run_workflow_marks_task_failed_on_runner_exception(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Crashing Task",
         description="task_runner raises instead of returning",
         state=TaskState.PENDING,
@@ -140,16 +147,18 @@ def test_run_workflow_marks_task_failed_on_runner_exception() -> None:
         task_states,
         time_source=lambda: 0.0,
         task_runner=task_runner,
+        conn=conn,
     )
 
     assert task.state == TaskState.FAILED
 
 
-def test_run_workflow_retries_on_timeout() -> None:
+def test_run_workflow_retries_on_timeout(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Slow Task",
         description="Times out on first call, then a retry succeeds",
         state=TaskState.PENDING,
@@ -187,6 +196,7 @@ def test_run_workflow_retries_on_timeout() -> None:
         task_states,
         time_source=time_source,
         task_runner=task_runner,
+        conn=conn,
     )
 
     assert task.state == TaskState.SUCCEEDED

@@ -1,3 +1,5 @@
+import sqlite3
+
 from orchestration_engine.models import Task, TaskState, Workflow
 from orchestration_engine.transitions import transition_task
 
@@ -6,11 +8,9 @@ def is_task_ready(
     task: Task,
     task_states: dict[str, TaskState],
 ) -> bool:
-    # if the dependencies is empty
     if not task.dependencies:
         return True
 
-    # if the are not empty dependencies is empty
     for dependency in task.dependencies:
         if task_states.get(dependency) != TaskState.SUCCEEDED:
             return False
@@ -34,10 +34,12 @@ def get_ready_tasks(
 def mark_ready_tasks(
     workflow: Workflow,
     task_states: dict[str, TaskState],
+    conn: sqlite3.Connection,
+    timestamp: float,
 ) -> list[Task]:
     ready_tasks = get_ready_tasks(workflow, task_states)
     for task in ready_tasks:
-        if transition_task(task, TaskState.READY):
+        if transition_task(task, TaskState.READY, conn, timestamp):
             task_states[task.task_id] = TaskState.READY
 
     return ready_tasks
@@ -52,9 +54,7 @@ def get_blocked_tasks(
     for task in workflow.tasks:
         if task.state == TaskState.PENDING:
             for dependency in task.dependencies:
-                # what upstream state means "this task can never succeed now"?
                 if task_states.get(dependency) == TaskState.FAILED:
-                    # what list method adds an item?
                     blocked_tasks.append(task)
                     break
 
@@ -64,13 +64,12 @@ def get_blocked_tasks(
 def cancel_blocked_tasks(
     workflow: Workflow,
     task_states: dict[str, TaskState],
+    conn: sqlite3.Connection,
+    timestamp: float,
 ) -> list[Task]:
-    # which function above does the finding?
     blocked_tasks = get_blocked_tasks(workflow, task_states)
     for task in blocked_tasks:
-        # what state are we moving blocked tasks into?
-        if transition_task(task, TaskState.CANCELLED):
-            # keep this dict in sync — same value as above
+        if transition_task(task, TaskState.CANCELLED, conn, timestamp):
             task_states[task.task_id] = TaskState.CANCELLED
 
     return blocked_tasks

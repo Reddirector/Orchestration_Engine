@@ -21,6 +21,7 @@ class RetryPolicy:
 @dataclass
 class Task:
     task_id: str
+    workflow_id: str
     name: str
     description: str
     dependencies: list[str]

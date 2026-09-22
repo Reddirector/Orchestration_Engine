@@ -9,6 +9,7 @@ def test_workflow_status_running_while_incomplete() -> None:
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="In Progress Task",
         description="Still running, not terminal",
         state=TaskState.RUNNING,
@@ -31,6 +32,7 @@ def test_workflow_status_succeeded_when_all_tasks_succeed() -> None:
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Done Task",
         description="Terminal, successful",
         state=TaskState.SUCCEEDED,
@@ -53,6 +55,7 @@ def test_workflow_status_failed_when_any_task_failed() -> None:
 
     task_a = Task(
         task_id="task-a",
+        workflow_id="test-workflow",
         name="Failed Task",
         description="Terminal, unsuccessful",
         state=TaskState.FAILED,
@@ -61,6 +64,7 @@ def test_workflow_status_failed_when_any_task_failed() -> None:
     )
     task_b = Task(
         task_id="task-b",
+        workflow_id="test-workflow",
         name="Succeeded Task",
         description="Terminal, successful, independent branch",
         state=TaskState.SUCCEEDED,

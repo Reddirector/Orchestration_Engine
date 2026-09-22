@@ -1,26 +1,27 @@
+import sqlite3
 from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow
 from orchestration_engine.scheduler import schedule_once
 
 
-def test_scheduler() -> None:
+def test_scheduler(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task_a = Task(
         name="Dependies check",
         task_id="task_a",
+        workflow_id="test-workflow",
         dependencies=[],
         description="first check",
         retry_policy=retry_policy,
         state=TaskState.PENDING,
-
     )
     task_b = Task(
         name="Dependies check",
         task_id="task_b",
+        workflow_id="test-workflow",
         dependencies=["task_a"],
         description="first check",
         retry_policy=retry_policy,
         state=TaskState.PENDING,
-
     )
     workflow = Workflow(
         workflow_id="workflow-ready-check",
@@ -32,10 +33,10 @@ def test_scheduler() -> None:
     task_states: dict[str, TaskState] = {
         "task_a": TaskState.PENDING,
         "task_b": TaskState.PENDING,
-
     }
 
-    scheduled = schedule_once(workflow, task_states, current_time=0.0)
+    scheduled = schedule_once(workflow, task_states,
+                              current_time=0.0, conn=conn)
 
     assert task_a in scheduled
     assert task_b not in scheduled
@@ -43,25 +44,25 @@ def test_scheduler() -> None:
     assert task_b.state == TaskState.PENDING
 
 
-def test_scheduler_succeeded_and_pending() -> None:
+def test_scheduler_succeeded_and_pending(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task_a = Task(
         name="Dependies check",
         task_id="task_a",
+        workflow_id="test-workflow",
         dependencies=[],
         description="first check",
         retry_policy=retry_policy,
         state=TaskState.SUCCEEDED,
-
     )
     task_b = Task(
         name="Dependies check",
         task_id="task_b",
+        workflow_id="test-workflow",
         dependencies=["task_a"],
         description="first check",
         retry_policy=retry_policy,
         state=TaskState.PENDING,
-
     )
     workflow = Workflow(
         workflow_id="workflow-ready-check",
@@ -73,20 +74,21 @@ def test_scheduler_succeeded_and_pending() -> None:
     task_states: dict[str, TaskState] = {
         "task_a": TaskState.SUCCEEDED,
         "task_b": TaskState.PENDING,
-
     }
 
-    scheduled = schedule_once(workflow, task_states, current_time=0.0)
+    scheduled = schedule_once(workflow, task_states,
+                              current_time=0.0, conn=conn)
 
     assert task_a not in scheduled
     assert task_b in scheduled
     assert task_b.state == TaskState.READY
 
 
-def test_schedule_once_retries_ready_task() -> None:
+def test_schedule_once_retries_ready_task(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task = Task(
         task_id="task-20",
+        workflow_id="test-workflow",
         name="Retry Ready Test",
         description="Checks retry_wait task becomes ready",
         dependencies=[],
@@ -106,16 +108,18 @@ def test_schedule_once_retries_ready_task() -> None:
         workflow,
         task_states={"task-20": TaskState.RETRY_WAIT},
         current_time=100.0,
+        conn=conn,
     )
 
     assert task.state == TaskState.READY
 
 
-def test_schedule_once_cancels_blocked_tasks() -> None:
+def test_schedule_once_cancels_blocked_tasks(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task_a = Task(
         task_id="task_a",
+        workflow_id="test-workflow",
         name="Upstream task",
         description="Fails to trigger cancellation of dependent",
         dependencies=[],
@@ -124,6 +128,7 @@ def test_schedule_once_cancels_blocked_tasks() -> None:
     )
     task_b = Task(
         task_id="task_b",
+        workflow_id="test-workflow",
         name="Downstream task",
         description="Should be cancelled via schedule_once",
         dependencies=["task_a"],
@@ -142,7 +147,6 @@ def test_schedule_once_cancels_blocked_tasks() -> None:
         "task_b": TaskState.PENDING,
     }
 
-    # which function under test?
-    schedule_once(workflow, task_states, current_time=0.0)
+    schedule_once(workflow, task_states, current_time=0.0, conn=conn)
 
     assert task_b.state == TaskState.CANCELLED

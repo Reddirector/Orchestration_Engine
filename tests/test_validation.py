@@ -7,6 +7,7 @@ def test_invalid_dependency() -> None:
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Test Task",
         description="Testing invalid dependency",
         state=TaskState.PENDING,
@@ -29,6 +30,7 @@ def test_self_dependency() -> None:
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Self-dependent Task",
         description="Task depends on itself",
         state=TaskState.PENDING,
@@ -51,6 +53,7 @@ def test_cycle_dependency() -> None:
 
     task_a = Task(
         task_id="task-A",
+        workflow_id="test-workflow",
         name="Task A",
         description="Task A depends on B",
         state=TaskState.PENDING,
@@ -60,6 +63,7 @@ def test_cycle_dependency() -> None:
 
     task_b = Task(
         task_id="task-B",
+        workflow_id="test-workflow",
         name="Task B",
         description="Task B depends on A",
         state=TaskState.PENDING,
@@ -82,6 +86,7 @@ def test_valid_dependency() -> None:
 
     task_c = Task(
         task_id="task-C",
+        workflow_id="test-workflow",
         name="Task C",
         description="Starting task",
         state=TaskState.PENDING,
@@ -91,6 +96,7 @@ def test_valid_dependency() -> None:
 
     task_d = Task(
         task_id="task-D",
+        workflow_id="test-workflow",
         name="Task D",
         description="Task D depends on C",
         state=TaskState.PENDING,
@@ -113,6 +119,7 @@ def test_duplicate_task_ids() -> None:
 
     task_a = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Task A",
         description="First task",
         state=TaskState.PENDING,
@@ -122,6 +129,7 @@ def test_duplicate_task_ids() -> None:
 
     task_b = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Task B",
         description="Second task with duplicate ID",
         state=TaskState.PENDING,

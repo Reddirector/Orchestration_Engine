@@ -10,6 +10,7 @@ def test_task_creation() -> None:
 
     task = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="counting the sec",
         description="A counting task",
         dependencies=[],
@@ -27,6 +28,7 @@ def test_workflow() -> None:
 
     task1 = Task(
         task_id="task-1",
+        workflow_id="test-workflow",
         name="Task 1",
         description="First task",
         dependencies=[],
@@ -36,6 +38,7 @@ def test_workflow() -> None:
 
     task2 = Task(
         task_id="task-2",
+        workflow_id="test-workflow",
         name="Task 2",
         description="Second task",
         dependencies=["task-1"],

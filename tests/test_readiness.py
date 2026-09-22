@@ -8,6 +8,7 @@ def test_task_with_no_dependencies_is_ready() -> None:
     task = Task(
         name="Dependies check",
         task_id="check-1",
+        workflow_id="test-workflow",
         dependencies=[],
         description="first check",
         retry_policy=retry_policy,
@@ -25,6 +26,7 @@ def test_task_with_dependencies_is_ready() -> None:
     task = Task(
         name="Dependies check",
         task_id="check-1",
+        workflow_id="test-workflow",
         dependencies=["task-A"],
         description="first check",
         retry_policy=retry_policy,
@@ -44,6 +46,7 @@ def test_task_with_and_succeeded_dependencies_is_ready() -> None:
     task_b = Task(
         name="Dependies check",
         task_id="check-3",
+        workflow_id="test-workflow",
         dependencies=["task-A"],
         description="first check",
         retry_policy=retry_policy,
@@ -63,6 +66,7 @@ def test_task_ready_or_not() -> None:
     task_h = Task(
         name="Dependies check",
         task_id="check-4",
+        workflow_id="test-workflow",
         dependencies=[],
         description="first check",
         retry_policy=retry_policy,
@@ -72,6 +76,7 @@ def test_task_ready_or_not() -> None:
     task_j = Task(
         name="Dependies check",
         task_id="check-5",
+        workflow_id="test-workflow",
         dependencies=[],
         description="first check",
         retry_policy=retry_policy,
@@ -81,6 +86,7 @@ def test_task_ready_or_not() -> None:
     task_l = Task(
         name="Dependies check",
         task_id="check-6",
+        workflow_id="test-workflow",
         dependencies=["check-4"],
         description="first check",
         retry_policy=retry_policy,
@@ -113,6 +119,7 @@ def test_task_ready() -> None:
     task_h = Task(
         name="Dependies check",
         task_id="check-4",
+        workflow_id="test-workflow",
         dependencies=[],
         description="first check",
         retry_policy=retry_policy,
@@ -122,6 +129,7 @@ def test_task_ready() -> None:
     task_j = Task(
         name="Dependies check",
         task_id="check-5",
+        workflow_id="test-workflow",
         dependencies=[],
         description="first check",
         retry_policy=retry_policy,
@@ -131,6 +139,7 @@ def test_task_ready() -> None:
     task_l = Task(
         name="Dependies check",
         task_id="check-6",
+        workflow_id="test-workflow",
         dependencies=["check-4"],
         description="first check",
         retry_policy=retry_policy,
@@ -157,25 +166,25 @@ def test_task_ready() -> None:
     assert task_l in ready_tasks
 
 
-def test_mark_ready_task() -> None:
+def test_mark_ready_task(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task_a = Task(
         name="Dependies check",
         task_id="task_a",
+        workflow_id="test-workflow",
         dependencies=[],
         description="first check",
         retry_policy=retry_policy,
         state=TaskState.PENDING,
-
     )
     task_b = Task(
         name="Dependies check",
         task_id="task_b",
+        workflow_id="test-workflow",
         dependencies=["task_a"],
         description="first check",
         retry_policy=retry_policy,
         state=TaskState.PENDING,
-
     )
     workflow = Workflow(
         workflow_id="workflow-ready-check",
@@ -188,7 +197,7 @@ def test_mark_ready_task() -> None:
         "task_a": TaskState.PENDING,
         "task_b": TaskState.PENDING,
     }
-    marked = mark_ready_tasks(workflow, task_states)
+    marked = mark_ready_tasks(workflow, task_states, conn, 0.0)
     assert task_a.state == TaskState.READY
     assert task_states["task_a"] == TaskState.READY
     assert task_b.state == TaskState.PENDING
@@ -196,25 +205,25 @@ def test_mark_ready_task() -> None:
     assert task_b not in marked
 
 
-def test_task_becomes_ready_after_dependency_succeeds() -> None:
+def test_task_becomes_ready_after_dependency_succeeds(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task_a = Task(
         name="Dependies check",
         task_id="task_a",
+        workflow_id="test-workflow",
         dependencies=[],
         description="first check",
         retry_policy=retry_policy,
         state=TaskState.PENDING,
-
     )
     task_b = Task(
         name="Dependies check",
         task_id="task_b",
+        workflow_id="test-workflow",
         dependencies=["task_a"],
         description="first check",
         retry_policy=retry_policy,
         state=TaskState.PENDING,
-
     )
     workflow = Workflow(
         workflow_id="workflow-ready-check",
@@ -226,35 +235,36 @@ def test_task_becomes_ready_after_dependency_succeeds() -> None:
     task_states: dict[str, TaskState] = {
         "task_a": TaskState.PENDING,
         "task_b": TaskState.PENDING,
-
     }
     task_a.state = TaskState.SUCCEEDED
     task_states["task_a"] = TaskState.SUCCEEDED
-    marked = mark_ready_tasks(workflow, task_states)
+    marked = mark_ready_tasks(workflow, task_states, conn, 0.0)
 
     assert task_b.state == TaskState.READY
     assert task_states["task_b"] == TaskState.READY
     assert task_b in marked
 
 
-def test_dependent_task_cancelled_when_dependency_failed() -> None:
+def test_dependent_task_cancelled_when_dependency_failed(conn) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task_a = Task(
         task_id="task_a",
+        workflow_id="test-workflow",
         name="Upstream task",
         description="Fails to trigger cancellation of dependent",
         dependencies=[],
         retry_policy=retry_policy,
-        state=TaskState.FAILED,  # what state represents "this task is done and unsuccessful"?
+        state=TaskState.FAILED,
     )
     task_b = Task(
         task_id="task_b",
+        workflow_id="test-workflow",
         name="Downstream task",
         description="Should be cancelled since its dependency failed",
         dependencies=["task_a"],
         retry_policy=retry_policy,
-        state=TaskState.PENDING,  # what state is task_b in before scheduling runs?
+        state=TaskState.PENDING,
     )
     workflow = Workflow(
         workflow_id="wf-fail-propagation",
@@ -264,13 +274,10 @@ def test_dependent_task_cancelled_when_dependency_failed() -> None:
     )
 
     task_states: dict[str, TaskState] = {
-        # must mirror task_a.state — this dict is the "external view" is_task_ready() reads
         "task_a": TaskState.FAILED,
         "task_b": TaskState.PENDING,
     }
 
-    # which function should run this check — existing one, or a new one you need to write?
-    cancel_blocked_tasks(workflow, task_states)
+    cancel_blocked_tasks(workflow, task_states, conn, 0.0)
 
-    # the state that should represent "unreachable because a dependency failed"
     assert task_b.state == TaskState.CANCELLED
