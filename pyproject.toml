@@ -8,6 +8,8 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = []
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 
 [build-system]
 requires = ["uv_build>=0.11.32,<0.12.0"]

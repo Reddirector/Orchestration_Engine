@@ -1,0 +1,23 @@
+{
+  "workflow_id": "wf-example-1",
+  "name": "example-workflow",
+  "description": "A minimal two-task workflow demonstrating dependency ordering and retries",
+  "tasks": [
+    {
+      "task_id": "fetch-data",
+      "name": "Fetch data",
+      "description": "Simulates pulling input data from an external source",
+      "dependencies": [],
+      "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+      "timeout_seconds": 10
+    },
+    {
+      "task_id": "process-data",
+      "name": "Process data",
+      "description": "Simulates processing the fetched data",
+      "dependencies": ["fetch-data"],
+      "retry_policy": { "max_attempts": 3, "delay_seconds": 2 },
+      "timeout_seconds": 10
+    }
+  ]
+}

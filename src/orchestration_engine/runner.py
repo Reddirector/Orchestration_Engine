@@ -15,6 +15,22 @@ def run_workflow(
     task_runner: Callable[[Task], bool],
     conn: sqlite3.Connection
 ) -> None:
+    """
+    Run a Workflow to completion, executing tasks as their dependencies clear.
+
+    Repeatedly schedules and executes ready tasks until none remain ready.
+    For each task, task_runner is called with the Task and must return True
+    on success or False on failure; failures are retried according to the
+    task's retry_policy. A task_runner that raises, or that exceeds the
+    task's timeout_seconds, is treated as a failure.
+
+    Mutates the Task objects inside workflow in place and persists state
+    transitions via conn. Raises ValueError if the workflow fails validation
+    (e.g. a dependency cycle) before any task runs.
+
+    After this returns, call get_workflow_status(workflow) on the same
+    workflow object to check the outcome.
+    """
     if not validate_workflow(workflow):
         raise ValueError("workflow is invalid")
 
