@@ -6,9 +6,13 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
 
-from orchestration_engine.errors import PersistenceError, WorkflowValidationError
+from orchestration_engine.errors import (
+    OrchestrationError,
+    PersistenceError,
+    WorkflowValidationError,
+)
 from orchestration_engine.executor import complete_task, execute_task, fail_task
-from orchestration_engine.models import Task, TaskState, Workflow
+from orchestration_engine.models import Task, TaskState, Workflow, WorkflowStatus
 from orchestration_engine.persistence import _migrate_database
 from orchestration_engine.scheduler import schedule_once
 from orchestration_engine.status import get_workflow_status
@@ -87,6 +91,7 @@ def run_workflow(
             """
             INSERT INTO runs (run_id, workflow_id, started_at, finished_at, status, definition_json)
             VALUES (?, ?, ?, NULL, 'running', ?)
+            ON CONFLICT(run_id) DO UPDATE SET status = 'running', finished_at = NULL
             """,
             (actual_run_id, workflow.workflow_id, started_at, definition_json),
         )
@@ -150,3 +155,80 @@ def run_workflow(
 
     mirror_task_states(workflow.tasks, task_states)
     return actual_run_id
+
+
+def resume_run(
+    conn: sqlite3.Connection,
+    run_id: str,
+    task_runner: Callable[[Task], bool],
+    time_source: Callable[[], float],
+    *,
+    sleep: Callable[[float], None] = time.sleep,
+) -> WorkflowStatus:
+    """
+    Resume an interrupted or pending workflow run.
+
+    Rebuilds the Workflow from definition_json stored in the database,
+    restores each task's latest state, attempt_count, and next_retry_at.
+    Never re-executes SUCCEEDED tasks. Any task found in RUNNING state
+    is treated as an interrupted failure with last_error set to
+    "interrupted: process exited while running", and retried/failed per policy.
+    Resuming an already finished run returns its status immediately.
+    """
+    _migrate_database(conn)
+    cursor = conn.execute(
+        "SELECT status, definition_json FROM runs WHERE run_id = ?",
+        (run_id,),
+    )
+    row = cursor.fetchone()
+    if row is None:
+        raise OrchestrationError(f"Run {run_id!r} not found in database")
+
+    status_str, definition_json = row
+    if status_str in (WorkflowStatus.SUCCEEDED.value, WorkflowStatus.FAILED.value):
+        return WorkflowStatus(status_str)
+
+    from orchestration_engine.loader import load_workflow_from_json
+    workflow = load_workflow_from_json(json.loads(definition_json))
+
+    cursor = conn.execute(
+        """
+        SELECT task_id, new_state, attempt_count, next_retry_at, error
+        FROM task_events
+        WHERE run_id = ?
+        ORDER BY id ASC
+        """,
+        (run_id,),
+    )
+    events_by_task: dict[str, tuple[str, int, float | None, str | None]] = {}
+    for task_id, new_state, attempt_count, next_retry_at, error in cursor.fetchall():
+        events_by_task[task_id] = (new_state, attempt_count, next_retry_at, error)
+
+    task_states: dict[str, TaskState] = {}
+    for task in workflow.tasks:
+        task._run_id = run_id
+        if task.task_id in events_by_task:
+            new_state, attempt_count, next_retry_at, error = events_by_task[task.task_id]
+            task.state = TaskState(new_state)
+            task.attempt_count = attempt_count
+            task.next_retry_at = next_retry_at
+            task.last_error = error
+        task_states[task.task_id] = task.state
+
+    current_time = time_source()
+    for task in workflow.tasks:
+        if task.state == TaskState.RUNNING:
+            task.last_error = "interrupted: process exited while running"
+            fail_task(task, current_time, conn, task_states)
+
+    run_workflow(
+        workflow,
+        task_states,
+        time_source,
+        task_runner,
+        conn,
+        sleep=sleep,
+        run_id=run_id,
+    )
+
+    return get_workflow_status(workflow)

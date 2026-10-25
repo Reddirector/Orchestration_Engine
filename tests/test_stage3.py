@@ -265,3 +265,112 @@ def test_g6_single_source_of_truth_mirror(conn: sqlite3.Connection) -> None:
     assert len(task_states) == len(wf.tasks)
     for task in wf.tasks:
         assert task_states[task.task_id] == task.state
+
+
+def test_resume_run(conn: sqlite3.Connection) -> None:
+    from orchestration_engine.loader import load_workflow_from_json
+    from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
+    from orchestration_engine.runner import resume_run, run_workflow
+    from orchestration_engine.transitions import transition_task
+
+    # 1. Resuming finished run returns status and does not invoke runner
+    t1 = Task("t1", "wf-res", "T1", "desc", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    wf = Workflow("wf-res", "ResumeWF", "desc", [t1])
+    run_id = run_workflow(wf, {}, lambda: 100.0, lambda _t: True, conn)
+
+    invoked = False
+
+    def dummy_runner(_t: Task) -> bool:
+        nonlocal invoked
+        invoked = True
+        return True
+
+    res_status = resume_run(conn, run_id, dummy_runner, lambda: 150.0)
+    assert res_status == WorkflowStatus.SUCCEEDED
+    assert invoked is False
+
+    # 2. Interrupted run: task A succeeded, task B died while RUNNING
+    raw_json = {
+        "workflow_id": "wf-interrupted",
+        "name": "Interrupted WF",
+        "description": "desc",
+        "tasks": [
+            {
+                "task_id": "stepA",
+                "name": "Step A",
+                "description": "desc",
+                "dependencies": [],
+                "retry_policy": {"max_attempts": 1, "delay_seconds": 1.0},
+            },
+            {
+                "task_id": "stepB",
+                "name": "Step B",
+                "description": "desc",
+                "dependencies": ["stepA"],
+                "retry_policy": {"max_attempts": 2, "delay_seconds": 1.0},
+            },
+        ],
+    }
+    wf2 = load_workflow_from_json(raw_json)
+    run_id2 = "interrupted-run-1"
+    # Execute stepA to success, stepB to running, then "crash"
+    tA = wf2.tasks[0]
+    tB = wf2.tasks[1]
+    tA._run_id = run_id2
+    tB._run_id = run_id2
+    # Record run in DB
+    from orchestration_engine.runner import _serialize_workflow
+    conn.execute(
+        """
+        INSERT INTO runs (run_id, workflow_id, started_at, finished_at, status, definition_json)
+        VALUES (?, ?, 100.0, NULL, 'running', ?)
+        """,
+        (run_id2, "wf-interrupted", _serialize_workflow(wf2)),
+    )
+    transition_task(tA, TaskState.READY, conn, 100.0)
+    tA.attempt_count = 1
+    transition_task(tA, TaskState.RUNNING, conn, 101.0)
+    transition_task(tA, TaskState.SUCCEEDED, conn, 102.0)
+    transition_task(tB, TaskState.READY, conn, 103.0)
+    tB.attempt_count = 1
+    transition_task(tB, TaskState.RUNNING, conn, 104.0)
+    conn.commit()
+
+    # Now resume in the engine
+    a_ran = False
+    b_ran = False
+
+    def resume_task_runner(task: Task) -> bool:
+        nonlocal a_ran, b_ran
+        if task.task_id == "stepA":
+            a_ran = True
+        elif task.task_id == "stepB":
+            b_ran = True
+        return True
+
+    curr_time = 200.0
+
+    def adv_time() -> float:
+        return curr_time
+
+    def fake_sleep(s: float) -> None:
+        nonlocal curr_time
+        curr_time += s
+
+    final_status = resume_run(
+        conn,
+        run_id2,
+        resume_task_runner,
+        time_source=adv_time,
+        sleep=fake_sleep,
+    )
+    assert final_status == WorkflowStatus.SUCCEEDED
+    assert a_ran is False  # Never re-run stepA
+    assert b_ran is True   # Retried and succeeded stepB
+
+    # Check database history for attempt counts
+    hist = get_run_history(conn, run_id2)
+    b_events = [ev for ev in hist if ev[2] == "stepB"]
+    # Final event for stepB is SUCCEEDED with attempt_count == 2
+    assert b_events[-1][4] == "succeeded"
+    assert b_events[-1][6] == 2

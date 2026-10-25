@@ -8,9 +8,10 @@ def execute_task(task: Task, conn: sqlite3.Connection, timestamp: float) -> bool
     if task.state != TaskState.READY:
         return False
 
-    if not transition_task(task, TaskState.RUNNING, conn, timestamp):
-        return False
     task.attempt_count += 1
+    if not transition_task(task, TaskState.RUNNING, conn, timestamp):
+        task.attempt_count -= 1
+        return False
     return True
 
 

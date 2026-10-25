@@ -9,7 +9,7 @@ from .errors import (
 from .loader import load_workflow_from_json, run_workflow_from_file
 from .models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
 from .persistence import get_connection, get_run_history, get_workflow_history, list_runs
-from .runner import run_workflow
+from .runner import resume_run, run_workflow
 from .status import get_run_status, get_workflow_status
 
 try:
@@ -26,6 +26,7 @@ __all__ = [
     "WorkflowStatus",
     "run_workflow",
     "run_workflow_from_file",
+    "resume_run",
     "load_workflow_from_json",
     "get_workflow_status",
     "get_run_status",
