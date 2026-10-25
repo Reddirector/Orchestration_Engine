@@ -47,6 +47,7 @@ nav:
   - Architecture: architecture.md
   - API Reference: api.md
   - CLI Reference: cli.md
+  - Performance & Benchmarks: performance.md
   - FAQ: faq.md
   - Limitations: limitations.md
   - Architecture Decisions:
