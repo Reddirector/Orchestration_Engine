@@ -252,18 +252,30 @@ def test_g11_float_seconds_and_validation() -> None:
         load_workflow_from_json(base_json)
 
 
-@pytest.mark.xfail(strict=True, reason="G12")
 def test_g12_orchestration_error_hierarchy() -> None:
-    from orchestration_engine.errors import (  # type: ignore[import-not-found]
+    from orchestration_engine.errors import (
         OrchestrationError,
+        PersistenceError,
         WorkflowDefinitionError,
         WorkflowValidationError,
     )
+    from orchestration_engine.transitions import transition_task
 
     assert issubclass(WorkflowDefinitionError, OrchestrationError)
     assert issubclass(WorkflowDefinitionError, ValueError)
     assert issubclass(WorkflowValidationError, OrchestrationError)
     assert issubclass(WorkflowValidationError, ValueError)
+    assert issubclass(PersistenceError, OrchestrationError)
+
+    # PersistenceError wraps sqlite3.Error on write failure
+    closed_conn = sqlite3.connect(":memory:")
+    closed_conn.close()
+    task = Task("t1", "wf1", "name", "desc", [], TaskState.PENDING, RetryPolicy(1, 1))
+    with pytest.raises(PersistenceError) as exc_info:
+        transition_task(task, TaskState.READY, closed_conn, 0.0)
+    assert isinstance(exc_info.value.__cause__, sqlite3.Error)
+    # State was not mutated on failure
+    assert task.state == TaskState.PENDING
 
 
 def test_g13_retry_delay_measured_from_finish_time(conn: sqlite3.Connection) -> None:

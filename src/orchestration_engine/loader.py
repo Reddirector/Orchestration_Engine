@@ -3,6 +3,7 @@ import sqlite3
 from collections.abc import Callable
 from typing import Any
 
+from orchestration_engine.errors import WorkflowDefinitionError
 from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
 from orchestration_engine.runner import run_workflow
 from orchestration_engine.status import get_workflow_status
@@ -20,7 +21,7 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
         name = json_data["name"]
         description = json_data["description"]
     except KeyError as e:
-        raise ValueError(f"workflow missing required field: {e}") from e
+        raise WorkflowDefinitionError(f"workflow missing required field: {e}") from e
 
     default_timeout = json_data.get("default_timeout_seconds")
     if default_timeout is not None:
@@ -29,7 +30,7 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
             or not isinstance(default_timeout, (int, float))
             or default_timeout < 0
         ):
-            raise ValueError(
+            raise WorkflowDefinitionError(
                 "workflow: default_timeout_seconds must be a non-negative number, "
                 f"got {default_timeout!r}"
             )
@@ -46,7 +47,7 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
                 or not isinstance(max_attempts, int)
                 or max_attempts < 1
             ):
-                raise ValueError(
+                raise WorkflowDefinitionError(
                     f"task {task_id}: retry_policy.max_attempts must be an integer >= 1, "
                     f"got {max_attempts!r}"
                 )
@@ -57,7 +58,7 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
                 or not isinstance(delay_seconds, (int, float))
                 or delay_seconds < 0
             ):
-                raise ValueError(
+                raise WorkflowDefinitionError(
                     f"task {task_id}: retry_policy.delay_seconds must be a non-negative number, "
                     f"got {delay_seconds!r}"
                 )
@@ -75,7 +76,7 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
                         or not isinstance(raw_timeout, (int, float))
                         or raw_timeout < 0
                     ):
-                        raise ValueError(
+                        raise WorkflowDefinitionError(
                             f"task {task_id}: timeout_seconds must be a non-negative number "
                             f"or null, got {raw_timeout!r}"
                         )
@@ -98,7 +99,7 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
                 timeout_seconds=timeout_seconds,
             )
         except KeyError as e:
-            raise ValueError(
+            raise WorkflowDefinitionError(
                 f"task {index} missing required field: {e}") from e
         tasks.append(task)
 

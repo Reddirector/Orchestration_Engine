@@ -1,3 +1,9 @@
+from .errors import (
+    OrchestrationError,
+    PersistenceError,
+    WorkflowDefinitionError,
+    WorkflowValidationError,
+)
 from .loader import load_workflow_from_json, run_workflow_from_file
 from .models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
 from .persistence import get_connection, get_workflow_history
@@ -16,4 +22,8 @@ __all__ = [
     "get_workflow_status",
     "get_workflow_history",
     "get_connection",
+    "OrchestrationError",
+    "WorkflowDefinitionError",
+    "WorkflowValidationError",
+    "PersistenceError",
 ]

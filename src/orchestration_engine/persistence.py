@@ -2,6 +2,8 @@ import os
 import sqlite3
 from typing import Any
 
+from orchestration_engine.errors import PersistenceError
+
 DB_PATH = "orchestration.db"
 
 
@@ -24,22 +26,25 @@ def get_connection(
     else:
         target_path = DB_PATH
 
-    conn = sqlite3.connect(target_path)
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS task_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            workflow_id TEXT NOT NULL,
-            task_id TEXT NOT NULL,
-            old_state TEXT NOT NULL,
-            new_state TEXT NOT NULL,
-            timestamp REAL NOT NULL,
-            attempt_count INTEGER NOT NULL
+    try:
+        conn = sqlite3.connect(target_path)
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS task_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workflow_id TEXT NOT NULL,
+                task_id TEXT NOT NULL,
+                old_state TEXT NOT NULL,
+                new_state TEXT NOT NULL,
+                timestamp REAL NOT NULL,
+                attempt_count INTEGER NOT NULL
+            )
+            """
         )
-        """
-    )
-    conn.commit()
-    return conn
+        conn.commit()
+        return conn
+    except sqlite3.Error as e:
+        raise PersistenceError(f"Failed to initialize database at {target_path}: {e}") from e
 
 
 def log_task_event(
@@ -56,11 +61,14 @@ def log_task_event(
         "(workflow_id, task_id, old_state, new_state, timestamp, attempt_count) "
         "VALUES (?, ?, ?, ?, ?, ?)"
     )
-    conn.execute(
-        query,
-        (workflow_id, task_id, old_state, new_state, timestamp, attempt_count),
-    )
-    conn.commit()
+    try:
+        conn.execute(
+            query,
+            (workflow_id, task_id, old_state, new_state, timestamp, attempt_count),
+        )
+        conn.commit()
+    except sqlite3.Error as e:
+        raise PersistenceError(f"Failed to log task event for {task_id}: {e}") from e
 
 
 def get_workflow_history(

@@ -4,10 +4,11 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
 
+from orchestration_engine.errors import WorkflowValidationError
 from orchestration_engine.executor import complete_task, execute_task, fail_task
 from orchestration_engine.models import Task, TaskState, Workflow
 from orchestration_engine.scheduler import schedule_once
-from orchestration_engine.validation import validate_workflow
+from orchestration_engine.validation import get_workflow_validation_error
 
 
 def run_workflow(
@@ -36,8 +37,9 @@ def run_workflow(
     After this returns, call get_workflow_status(workflow) on the same
     workflow object to check the outcome.
     """
-    if not validate_workflow(workflow):
-        raise ValueError("workflow is invalid")
+    validation_error = get_workflow_validation_error(workflow)
+    if validation_error:
+        raise WorkflowValidationError(f"workflow is invalid: {validation_error}")
 
     while True:
         current_time = time_source()

@@ -1,5 +1,6 @@
 import sqlite3
 
+from orchestration_engine.errors import PersistenceError
 from orchestration_engine.models import Task, TaskState
 from orchestration_engine.persistence import log_task_event
 
@@ -29,15 +30,18 @@ def transition_task(
     if not can_transition(task.state, new_state):
         return False
 
-    log_task_event(
-        conn,
-        task_id=task.task_id,
-        old_state=task.state,
-        new_state=new_state,
-        timestamp=timestamp,
-        attempt_count=task.attempt_count,
-        workflow_id=task.workflow_id,
-    )
+    try:
+        log_task_event(
+            conn,
+            task_id=task.task_id,
+            old_state=task.state,
+            new_state=new_state,
+            timestamp=timestamp,
+            attempt_count=task.attempt_count,
+            workflow_id=task.workflow_id,
+        )
+    except sqlite3.Error as e:
+        raise PersistenceError(f"Database error during transition: {e}") from e
 
     task.state = new_state
     return True
