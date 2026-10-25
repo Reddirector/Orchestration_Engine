@@ -26,7 +26,9 @@ def run_workflow(
     For each task, task_runner is called with the Task and must return True
     on success or False on failure; failures are retried according to the
     task's retry_policy. A task_runner that raises, or that exceeds the
-    task's timeout_seconds, is treated as a failure.
+    task's timeout_seconds, is treated as a failure. Note that Python threads
+    cannot be killed: a timed-out callable keeps running in the background
+    while the engine moves on.
 
     Mutates the Task objects inside workflow in place and persists state
     transitions via conn. Raises ValueError if the workflow fails validation
@@ -56,18 +58,21 @@ def run_workflow(
         for task in ready:
             execute_task(task, conn, current_time)
 
+            pool = ThreadPoolExecutor(max_workers=1)
             try:
-                with ThreadPoolExecutor(max_workers=1) as pool:
+                try:
                     future = pool.submit(task_runner, task)
                     success = future.result(timeout=task.timeout_seconds)
-            except FutureTimeoutError:
-                finish_time = time_source()
-                fail_task(task, finish_time, conn, task_states)
-                continue
-            except Exception:
-                finish_time = time_source()
-                transition_task(task, TaskState.FAILED, conn, finish_time)
-                continue
+                except FutureTimeoutError:
+                    finish_time = time_source()
+                    fail_task(task, finish_time, conn, task_states)
+                    continue
+                except Exception:
+                    finish_time = time_source()
+                    transition_task(task, TaskState.FAILED, conn, finish_time)
+                    continue
+            finally:
+                pool.shutdown(wait=False, cancel_futures=True)
 
             finish_time = time_source()
             if success:

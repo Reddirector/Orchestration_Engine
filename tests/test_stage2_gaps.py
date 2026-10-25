@@ -31,7 +31,6 @@ def test_g2_get_connection_accepts_path(tmp_path: Path) -> None:
         conn.close()
 
 
-@pytest.mark.xfail(strict=True, reason="G3")
 def test_g3_timeout_does_not_block_engine(conn: sqlite3.Connection) -> None:
     unblock_event = threading.Event()
     task = Task(
