@@ -122,7 +122,6 @@ def test_g12_orchestration_error_hierarchy() -> None:
     assert issubclass(WorkflowValidationError, ValueError)
 
 
-@pytest.mark.xfail(strict=True, reason="G13")
 def test_g13_retry_delay_measured_from_finish_time(conn: sqlite3.Connection) -> None:
     current_time = 100.0
     task = Task(
@@ -139,6 +138,10 @@ def test_g13_retry_delay_measured_from_finish_time(conn: sqlite3.Connection) -> 
     def advancing_time() -> float:
         return current_time
 
+    def fake_sleep(seconds: float) -> None:
+        nonlocal current_time
+        current_time += seconds
+
     def runner(_t: Task) -> bool:
         nonlocal current_time
         current_time += 20.0
@@ -150,6 +153,11 @@ def test_g13_retry_delay_measured_from_finish_time(conn: sqlite3.Connection) -> 
         time_source=advancing_time,
         task_runner=runner,
         conn=conn,
+        sleep=fake_sleep,
     )
-    assert task.state == TaskState.RETRY_WAIT
+    # Task ran attempt 1 (took 20s: 100 -> 120), failed, next_retry_at was set to 125.
+    # Sleep advanced time to 125, attempt 2 ran (took 20s: 125 -> 145),
+    # reached max_attempts (2) -> FAILED.
+    assert task.attempt_count == 2
+    assert task.state == TaskState.FAILED
     assert task.next_retry_at == 125.0

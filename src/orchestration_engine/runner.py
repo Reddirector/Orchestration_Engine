@@ -61,13 +61,16 @@ def run_workflow(
                     future = pool.submit(task_runner, task)
                     success = future.result(timeout=task.timeout_seconds)
             except FutureTimeoutError:
-                fail_task(task, current_time, conn, task_states)
+                finish_time = time_source()
+                fail_task(task, finish_time, conn, task_states)
                 continue
             except Exception:
-                transition_task(task, TaskState.FAILED, conn, current_time)
+                finish_time = time_source()
+                transition_task(task, TaskState.FAILED, conn, finish_time)
                 continue
 
+            finish_time = time_source()
             if success:
-                complete_task(task, conn, current_time, task_states)
+                complete_task(task, conn, finish_time, task_states)
             else:
-                fail_task(task, current_time, conn, task_states)
+                fail_task(task, finish_time, conn, task_states)
