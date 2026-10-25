@@ -31,8 +31,9 @@ def run_workflow(
     while the engine moves on.
 
     Mutates the Task objects inside workflow in place and persists state
-    transitions via conn. Raises ValueError if the workflow fails validation
-    (e.g. a dependency cycle) before any task runs.
+    transitions via conn. Raises WorkflowValidationError (subclass of ValueError)
+    if the workflow fails validation (e.g. a dependency cycle) before any task runs.
+    The optional sleep parameter controls waiting while tasks are in RETRY_WAIT.
 
     After this returns, call get_workflow_status(workflow) on the same
     workflow object to check the outcome.

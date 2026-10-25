@@ -56,6 +56,10 @@ def log_task_event(
     timestamp: float,
     attempt_count: int,
 ) -> None:
+    """
+    Append a task state transition event to the task_events audit table.
+    Raises PersistenceError if the database write fails.
+    """
     query = (
         "INSERT INTO task_events "
         "(workflow_id, task_id, old_state, new_state, timestamp, attempt_count) "

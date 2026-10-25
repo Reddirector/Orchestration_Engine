@@ -74,6 +74,10 @@ def retry_task(
 
 
 def calculate_retry_delay(task: Task) -> float:
+    """
+    Calculate retry delay using exponential backoff:
+    delay = delay_seconds * (2 ** (attempt_count - 1))
+    """
     base_delay = task.retry_policy.delay_seconds
     attempt_count = task.attempt_count
 
