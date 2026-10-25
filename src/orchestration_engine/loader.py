@@ -17,13 +17,125 @@ from orchestration_engine.runner import run_workflow
 from orchestration_engine.status import get_workflow_status
 
 
-def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
+def load_workflow_from_json(
+    json_data: dict[str, Any],
+    *,
+    collect_errors: bool = False,
+) -> Workflow:
     """
     Parse a workflow definition dict (e.g. loaded from JSON) into a Workflow.
 
-    Does not run the workflow or touch the database. Raises ValueError if
-    the workflow or any task is missing a required field.
+    Does not run the workflow or touch the database. Raises WorkflowDefinitionError
+    if the workflow or any task is missing a required field or has invalid types.
+    When collect_errors=True, all errors are accumulated and raised as a single
+    WorkflowDefinitionError with an .errors list containing JSON-pointer paths.
     """
+    if collect_errors:
+        errors: list[str] = []
+        if "workflow_id" not in json_data:
+            errors.append("/workflow_id: missing required field")
+        elif not isinstance(json_data["workflow_id"], str) or not json_data["workflow_id"]:
+            errors.append("/workflow_id: must be a non-empty string")
+
+        if "name" not in json_data:
+            errors.append("/name: missing required field")
+        elif not isinstance(json_data["name"], str):
+            errors.append("/name: must be a string")
+
+        if "description" not in json_data:
+            errors.append("/description: missing required field")
+        elif not isinstance(json_data["description"], str):
+            errors.append("/description: must be a string")
+
+        raw_default_to = json_data.get("default_timeout_seconds")
+        if raw_default_to is not None:
+            if (
+                isinstance(raw_default_to, bool)
+                or not isinstance(raw_default_to, (int, float))
+                or raw_default_to < 0
+            ):
+                errors.append(
+                    "/default_timeout_seconds: must be a non-negative number or null"
+                )
+
+        if "tasks" not in json_data:
+            errors.append("/tasks: missing required field")
+        elif not isinstance(json_data["tasks"], list):
+            errors.append("/tasks: must be a list")
+        else:
+            for index, task_data in enumerate(json_data["tasks"]):
+                ptr = f"/tasks/{index}"
+                if not isinstance(task_data, dict):
+                    errors.append(f"{ptr}: must be an object")
+                    continue
+
+                if "task_id" not in task_data:
+                    errors.append(f"{ptr}/task_id: missing required field")
+                elif not isinstance(task_data["task_id"], str) or not task_data["task_id"]:
+                    errors.append(f"{ptr}/task_id: must be a non-empty string")
+
+                if "name" not in task_data:
+                    errors.append(f"{ptr}/name: missing required field")
+                elif not isinstance(task_data["name"], str):
+                    errors.append(f"{ptr}/name: must be a string")
+
+                if "description" not in task_data:
+                    errors.append(f"{ptr}/description: missing required field")
+                elif not isinstance(task_data["description"], str):
+                    errors.append(f"{ptr}/description: must be a string")
+
+                if "dependencies" not in task_data:
+                    errors.append(f"{ptr}/dependencies: missing required field")
+                elif not isinstance(task_data["dependencies"], list):
+                    errors.append(f"{ptr}/dependencies: must be a list")
+                else:
+                    for d_i, dep in enumerate(task_data["dependencies"]):
+                        if not isinstance(dep, str):
+                            errors.append(f"{ptr}/dependencies/{d_i}: must be a string")
+
+                if "retry_policy" not in task_data:
+                    errors.append(f"{ptr}/retry_policy: missing required field")
+                elif not isinstance(task_data["retry_policy"], dict):
+                    errors.append(f"{ptr}/retry_policy: must be an object")
+                else:
+                    rp = task_data["retry_policy"]
+                    if "max_attempts" not in rp:
+                        errors.append(f"{ptr}/retry_policy/max_attempts: missing required field")
+                    elif (
+                        isinstance(rp["max_attempts"], bool)
+                        or not isinstance(rp["max_attempts"], int)
+                        or rp["max_attempts"] < 1
+                    ):
+                        errors.append(f"{ptr}/retry_policy/max_attempts: must be an integer >= 1")
+
+                    if "delay_seconds" not in rp:
+                        errors.append(f"{ptr}/retry_policy/delay_seconds: missing required field")
+                    elif (
+                        isinstance(rp["delay_seconds"], bool)
+                        or not isinstance(rp["delay_seconds"], (int, float))
+                        or rp["delay_seconds"] < 0
+                    ):
+                        errors.append(
+                            f"{ptr}/retry_policy/delay_seconds: must be a non-negative number"
+                        )
+
+                if "timeout_seconds" in task_data:
+                    raw_to = task_data["timeout_seconds"]
+                    if raw_to is not None and (
+                        isinstance(raw_to, bool)
+                        or not isinstance(raw_to, (int, float))
+                        or raw_to < 0
+                    ):
+                        errors.append(
+                            f"{ptr}/timeout_seconds: must be a non-negative number or null"
+                        )
+
+        if errors:
+            raise WorkflowDefinitionError(
+                f"Workflow definition has {len(errors)} error(s): {'; '.join(errors)}",
+                errors=errors,
+            )
+
     try:
         workflow_id = json_data["workflow_id"]
         name = json_data["name"]

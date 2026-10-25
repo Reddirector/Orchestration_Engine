@@ -10,6 +10,10 @@ class OrchestrationError(Exception):
 class WorkflowDefinitionError(OrchestrationError, ValueError):
     """Raised when a workflow definition is invalid, incomplete, or malformed."""
 
+    def __init__(self, message: str, errors: list[str] | None = None) -> None:
+        super().__init__(message)
+        self.errors: list[str] = list(errors or [])
+
 
 class WorkflowValidationError(OrchestrationError, ValueError):
     """Raised when a workflow fails validation (cycles, invalid IDs, self-dependencies)."""

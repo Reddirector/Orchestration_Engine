@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OrchestrationEngineWorkflow",
+  "description": "Schema definition for Orchestration Engine workflow files",
+  "type": "object",
+  "required": ["workflow_id", "name", "description", "tasks"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "workflow_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this workflow"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for this workflow"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the workflow's purpose"
+    },
+    "default_timeout_seconds": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Optional default timeout in seconds for tasks in this workflow"
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "name", "description", "dependencies", "retry_policy"],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique identifier for this task within the workflow"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of the task"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of the task"
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of task_ids that must succeed before this task can start"
+          },
+          "retry_policy": {
+            "type": "object",
+            "required": ["max_attempts", "delay_seconds"],
+            "properties": {
+              "max_attempts": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Total number of attempts allowed including the first"
+              },
+              "delay_seconds": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Base delay between retries in seconds"
+              }
+            },
+            "additionalProperties": true
+          },
+          "timeout_seconds": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "description": "Maximum seconds allowed for this task before timing out"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

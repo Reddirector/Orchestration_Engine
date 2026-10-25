@@ -322,3 +322,95 @@ def test_workflow_to_dict_round_trip() -> None:
         assert rt_t.timeout_seconds == orig_t.timeout_seconds
 
 
+def test_workflow_schema_json_packaged() -> None:
+    import json
+    from pathlib import Path
+
+    import orchestration_engine
+
+    pkg_dir = Path(orchestration_engine.__file__).parent
+    schema_path = pkg_dir / "workflow.schema.json"
+    assert schema_path.exists(), f"Schema file not found at {schema_path}"
+
+    with open(schema_path) as f:
+        schema = json.load(f)
+    assert "$schema" in schema
+    assert "properties" in schema
+    assert "tasks" in schema["properties"]
+
+
+def test_load_workflow_collect_errors() -> None:
+    from orchestration_engine.errors import WorkflowDefinitionError
+    from orchestration_engine.loader import load_workflow_from_json
+
+    invalid_data = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "workflow_id": "wf-invalid",
+        # missing "name"
+        # missing "description"
+        "default_timeout_seconds": -5.0,  # negative timeout
+        "tasks": [
+            {
+                # missing "task_id"
+                "name": "Task 1",
+                "description": "desc",
+                "dependencies": "not-a-list",  # invalid dependencies
+                "retry_policy": {
+                    "max_attempts": 0,  # invalid
+                    "delay_seconds": -1.0,  # invalid
+                },
+                "timeout_seconds": "not-a-number",  # invalid
+            }
+        ],
+    }
+
+    # Default fail-fast raises on first error
+    with pytest.raises(WorkflowDefinitionError) as exc_info:
+        load_workflow_from_json(invalid_data, collect_errors=False)
+    assert not exc_info.value.errors  # default empty list
+
+    # collect_errors=True collects all errors
+    with pytest.raises(WorkflowDefinitionError) as exc_info:
+        load_workflow_from_json(invalid_data, collect_errors=True)
+
+    errs = exc_info.value.errors
+    assert len(errs) >= 5
+    # Verify JSON pointer paths
+    assert any("/name" in e for e in errs)
+    assert any("/description" in e for e in errs)
+    assert any("/default_timeout_seconds" in e for e in errs)
+    assert any("/tasks/0/task_id" in e for e in errs)
+    assert any("/tasks/0/dependencies" in e for e in errs)
+    assert any("/tasks/0/retry_policy/max_attempts" in e for e in errs)
+    assert any("/tasks/0/retry_policy/delay_seconds" in e for e in errs)
+    assert any("/tasks/0/timeout_seconds" in e for e in errs)
+
+
+def test_load_workflow_ignores_unknown_keys() -> None:
+    from orchestration_engine.loader import load_workflow_from_json
+
+    data = {
+        "$schema": "https://example.com/schema",
+        "workflow_id": "wf-extra",
+        "name": "Extra Keys WF",
+        "description": "desc",
+        "author": "someone",
+        "version_tag": "1.2.3",
+        "tasks": [
+            {
+                "task_id": "t1",
+                "name": "T1",
+                "description": "desc",
+                "dependencies": [],
+                "retry_policy": {"max_attempts": 1, "delay_seconds": 1.0, "jitter": True},
+                "annotations": {"priority": "high"},
+            }
+        ],
+    }
+    wf = load_workflow_from_json(data)
+    assert wf.workflow_id == "wf-extra"
+    assert len(wf.tasks) == 1
+    assert wf.tasks[0].task_id == "t1"
+
+
+
