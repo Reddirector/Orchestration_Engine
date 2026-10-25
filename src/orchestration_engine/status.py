@@ -1,4 +1,4 @@
-from orchestration_engine.models import Task, TaskState, Workflow, WorkflowStatus
+from orchestration_engine.models import TaskState, Workflow, WorkflowStatus
 
 
 def get_workflow_status(workflow: Workflow) -> WorkflowStatus:

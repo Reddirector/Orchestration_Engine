@@ -1,3 +1,5 @@
+import sqlite3
+
 import pytest
 
 from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
@@ -5,7 +7,7 @@ from orchestration_engine.runner import run_workflow
 from orchestration_engine.status import get_workflow_status
 
 
-def test_run_workflow_raises_on_invalid_workflow(conn) -> None:
+def test_run_workflow_raises_on_invalid_workflow(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -37,7 +39,7 @@ def test_run_workflow_raises_on_invalid_workflow(conn) -> None:
         )
 
 
-def test_run_workflow_executes_task_via_callback(conn) -> None:
+def test_run_workflow_executes_task_via_callback(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -73,7 +75,7 @@ def test_run_workflow_executes_task_via_callback(conn) -> None:
     assert task.state == TaskState.SUCCEEDED
 
 
-def test_run_workflow_retries_using_time_source(conn) -> None:
+def test_run_workflow_retries_using_time_source(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -118,7 +120,7 @@ def test_run_workflow_retries_using_time_source(conn) -> None:
     assert task.state == TaskState.SUCCEEDED
 
 
-def test_run_workflow_marks_task_failed_on_runner_exception(conn) -> None:
+def test_run_workflow_marks_task_failed_on_runner_exception(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -154,7 +156,7 @@ def test_run_workflow_marks_task_failed_on_runner_exception(conn) -> None:
     assert task.state == TaskState.FAILED
 
 
-def test_run_workflow_retries_on_timeout(conn) -> None:
+def test_run_workflow_retries_on_timeout(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -203,7 +205,7 @@ def test_run_workflow_retries_on_timeout(conn) -> None:
     assert task.state == TaskState.SUCCEEDED
 
 
-def test_transitive_cancellation_end_to_end(conn) -> None:
+def test_transitive_cancellation_end_to_end(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=1, delay_seconds=1)
     task_a = Task(
         task_id="A",
@@ -269,7 +271,7 @@ def test_transitive_cancellation_end_to_end(conn) -> None:
     assert get_workflow_status(workflow) == WorkflowStatus.FAILED
 
 
-def test_transitive_cancellation_diamond_case(conn) -> None:
+def test_transitive_cancellation_diamond_case(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=1, delay_seconds=1)
     task_a = Task(
         task_id="A",
@@ -335,7 +337,7 @@ def test_transitive_cancellation_diamond_case(conn) -> None:
     assert get_workflow_status(workflow) == WorkflowStatus.FAILED
 
 
-def test_retry_wait_task_retries_and_succeeds(conn) -> None:
+def test_retry_wait_task_retries_and_succeeds(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=2, delay_seconds=5)
     task = Task(
         task_id="task-1",
@@ -385,7 +387,7 @@ def test_retry_wait_task_retries_and_succeeds(conn) -> None:
     assert get_workflow_status(workflow) == WorkflowStatus.SUCCEEDED
 
 
-def test_retry_wait_task_fails_after_max_attempts(conn) -> None:
+def test_retry_wait_task_fails_after_max_attempts(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task = Task(
         task_id="task-1",
@@ -436,7 +438,7 @@ def test_retry_wait_task_fails_after_max_attempts(conn) -> None:
     assert get_workflow_status(workflow) == WorkflowStatus.FAILED
 
 
-def test_retry_wait_independent_task_succeeds_while_other_waits(conn) -> None:
+def test_retry_wait_independent_task_succeeds_while_other_waits(conn: sqlite3.Connection) -> None:
     retry_policy_a = RetryPolicy(max_attempts=2, delay_seconds=5)
     retry_policy_d = RetryPolicy(max_attempts=1, delay_seconds=1)
     task_a = Task(

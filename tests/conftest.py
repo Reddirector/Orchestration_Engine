@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.fixture
-def conn():
+def conn() -> sqlite3.Connection:
     connection = sqlite3.connect(":memory:")
     connection.execute(
         """

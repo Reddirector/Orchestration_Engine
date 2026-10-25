@@ -1,8 +1,16 @@
-from orchestration_engine.executor import complete_task, execute_task, fail_task, retry_task, calculate_retry_delay
+import sqlite3
+
+from orchestration_engine.executor import (
+    calculate_retry_delay,
+    complete_task,
+    execute_task,
+    fail_task,
+    retry_task,
+)
 from orchestration_engine.models import RetryPolicy, Task, TaskState
 
 
-def test_ready_task_starts_running(conn) -> None:
+def test_ready_task_starts_running(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -21,7 +29,7 @@ def test_ready_task_starts_running(conn) -> None:
     assert task.state == TaskState.RUNNING
 
 
-def test_pending_task_is_rejected(conn) -> None:
+def test_pending_task_is_rejected(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -40,7 +48,7 @@ def test_pending_task_is_rejected(conn) -> None:
     assert task.state == TaskState.PENDING
 
 
-def test_running_task_can_complete(conn) -> None:
+def test_running_task_can_complete(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -59,7 +67,7 @@ def test_running_task_can_complete(conn) -> None:
     assert task.state == TaskState.SUCCEEDED
 
 
-def test_ready_task_cannot_complete(conn) -> None:
+def test_ready_task_cannot_complete(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -78,7 +86,7 @@ def test_ready_task_cannot_complete(conn) -> None:
     assert task.state == TaskState.READY
 
 
-def test_failed_task_moves_to_retry_wait(conn) -> None:
+def test_failed_task_moves_to_retry_wait(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -99,7 +107,7 @@ def test_failed_task_moves_to_retry_wait(conn) -> None:
     assert task.next_retry_at == 105.0
 
 
-def test_failed_task_moves_to_failed_after_last_attempt(conn) -> None:
+def test_failed_task_moves_to_failed_after_last_attempt(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -120,7 +128,7 @@ def test_failed_task_moves_to_failed_after_last_attempt(conn) -> None:
     assert task.next_retry_at is None
 
 
-def test_execute_task_increments_attempt_count(conn) -> None:
+def test_execute_task_increments_attempt_count(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -141,7 +149,7 @@ def test_execute_task_increments_attempt_count(conn) -> None:
     assert task.attempt_count == 1
 
 
-def test_retry_wait_task_becomes_ready(conn) -> None:
+def test_retry_wait_task_becomes_ready(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -163,7 +171,7 @@ def test_retry_wait_task_becomes_ready(conn) -> None:
     assert task.attempt_count == 1
 
 
-def test_second_retry_increments_attempt_count(conn) -> None:
+def test_second_retry_increments_attempt_count(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -187,7 +195,7 @@ def test_second_retry_increments_attempt_count(conn) -> None:
     assert task.attempt_count == 2
 
 
-def test_retry_task_rejects_non_retry_wait_state(conn) -> None:
+def test_retry_task_rejects_non_retry_wait_state(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -208,7 +216,7 @@ def test_retry_task_rejects_non_retry_wait_state(conn) -> None:
     assert task.attempt_count == 1
 
 
-def test_failed_task_schedules_retry_time(conn) -> None:
+def test_failed_task_schedules_retry_time(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -229,7 +237,7 @@ def test_failed_task_schedules_retry_time(conn) -> None:
     assert task.next_retry_at == 110.0
 
 
-def test_retry_task_rejects_early_retry(conn) -> None:
+def test_retry_task_rejects_early_retry(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -250,7 +258,7 @@ def test_retry_task_rejects_early_retry(conn) -> None:
     assert task.state == TaskState.RETRY_WAIT
 
 
-def test_retry_task_allowed_at_scheduled_time(conn) -> None:
+def test_retry_task_allowed_at_scheduled_time(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -328,7 +336,7 @@ def test_calculate_third_retry_delay() -> None:
     assert result == 20
 
 
-def test_failed_task_uses_exponential_retry_delay(conn) -> None:
+def test_failed_task_uses_exponential_retry_delay(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -349,7 +357,7 @@ def test_failed_task_uses_exponential_retry_delay(conn) -> None:
     assert task.next_retry_at == 110.0
 
 
-def test_failed_task_exceeds_max_attempts_goes_to_failed(conn) -> None:
+def test_failed_task_exceeds_max_attempts_goes_to_failed(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(

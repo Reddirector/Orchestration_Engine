@@ -14,10 +14,12 @@ def execute_task(task: Task, conn: sqlite3.Connection, timestamp: float) -> bool
     return True
 
 
-def complete_task(task: Task,
-                  conn: sqlite3.Connection,
-                  timestamp: float,
-                  task_states: dict) -> bool:
+def complete_task(
+    task: Task,
+    conn: sqlite3.Connection,
+    timestamp: float,
+    task_states: dict[str, TaskState],
+) -> bool:
     if task.state != TaskState.RUNNING:
         return False
 
@@ -27,8 +29,12 @@ def complete_task(task: Task,
     return success
 
 
-def fail_task(task: Task, current_time: float, conn: sqlite3.Connection,
-              task_states: dict) -> bool:
+def fail_task(
+    task: Task,
+    current_time: float,
+    conn: sqlite3.Connection,
+    task_states: dict[str, TaskState],
+) -> bool:
     if task.state != TaskState.RUNNING:
         return False
 
@@ -46,8 +52,12 @@ def fail_task(task: Task, current_time: float, conn: sqlite3.Connection,
     return failed
 
 
-def retry_task(task: Task, current_time: float, conn: sqlite3.Connection,
-               task_states: dict) -> bool:
+def retry_task(
+    task: Task,
+    current_time: float,
+    conn: sqlite3.Connection,
+    task_states: dict[str, TaskState],
+) -> bool:
     if task.state != TaskState.RETRY_WAIT:
         return False
 
@@ -67,4 +77,4 @@ def calculate_retry_delay(task: Task) -> int:
     base_delay = task.retry_policy.delay_seconds
     attempt_count = task.attempt_count
 
-    return base_delay * (2 ** (attempt_count - 1))
+    return int(base_delay * (2 ** (attempt_count - 1)))

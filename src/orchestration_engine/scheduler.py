@@ -2,7 +2,7 @@ import sqlite3
 
 from orchestration_engine.executor import retry_task
 from orchestration_engine.models import Task, TaskState, Workflow
-from orchestration_engine.readiness import mark_ready_tasks, cancel_blocked_tasks
+from orchestration_engine.readiness import cancel_blocked_tasks, mark_ready_tasks
 
 
 def schedule_once(

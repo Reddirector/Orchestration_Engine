@@ -1,9 +1,10 @@
 import sqlite3
+
 from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow
 from orchestration_engine.scheduler import schedule_once
 
 
-def test_scheduler(conn) -> None:
+def test_scheduler(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task_a = Task(
         name="Dependies check",
@@ -44,7 +45,7 @@ def test_scheduler(conn) -> None:
     assert task_b.state == TaskState.PENDING
 
 
-def test_scheduler_succeeded_and_pending(conn) -> None:
+def test_scheduler_succeeded_and_pending(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task_a = Task(
         name="Dependies check",
@@ -84,7 +85,7 @@ def test_scheduler_succeeded_and_pending(conn) -> None:
     assert task_b.state == TaskState.READY
 
 
-def test_schedule_once_retries_ready_task(conn) -> None:
+def test_schedule_once_retries_ready_task(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task = Task(
         task_id="task-20",
@@ -114,7 +115,7 @@ def test_schedule_once_retries_ready_task(conn) -> None:
     assert task.state == TaskState.READY
 
 
-def test_schedule_once_cancels_blocked_tasks(conn) -> None:
+def test_schedule_once_cancels_blocked_tasks(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task_a = Task(

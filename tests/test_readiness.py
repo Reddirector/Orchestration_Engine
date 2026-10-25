@@ -1,5 +1,12 @@
+import sqlite3
+
 from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow
-from orchestration_engine.readiness import get_ready_tasks, is_task_ready, mark_ready_tasks, cancel_blocked_tasks
+from orchestration_engine.readiness import (
+    cancel_blocked_tasks,
+    get_ready_tasks,
+    is_task_ready,
+    mark_ready_tasks,
+)
 
 
 def test_task_with_no_dependencies_is_ready() -> None:
@@ -166,7 +173,7 @@ def test_task_ready() -> None:
     assert task_l in ready_tasks
 
 
-def test_mark_ready_task(conn) -> None:
+def test_mark_ready_task(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task_a = Task(
         name="Dependies check",
@@ -205,7 +212,7 @@ def test_mark_ready_task(conn) -> None:
     assert task_b not in marked
 
 
-def test_task_becomes_ready_after_dependency_succeeds(conn) -> None:
+def test_task_becomes_ready_after_dependency_succeeds(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
     task_a = Task(
         name="Dependies check",
@@ -245,7 +252,7 @@ def test_task_becomes_ready_after_dependency_succeeds(conn) -> None:
     assert task_b in marked
 
 
-def test_dependent_task_cancelled_when_dependency_failed(conn) -> None:
+def test_dependent_task_cancelled_when_dependency_failed(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task_a = Task(
@@ -283,7 +290,7 @@ def test_dependent_task_cancelled_when_dependency_failed(conn) -> None:
     assert task_b.state == TaskState.CANCELLED
 
 
-def test_transitive_cancellation_unit(conn) -> None:
+def test_transitive_cancellation_unit(conn: sqlite3.Connection) -> None:
     from orchestration_engine.scheduler import schedule_once
 
     retry_policy = RetryPolicy(max_attempts=1, delay_seconds=1)

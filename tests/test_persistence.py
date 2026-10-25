@@ -1,9 +1,10 @@
+
 import sqlite3
 
 from orchestration_engine.persistence import get_workflow_history, log_task_event
 
 
-def test_get_workflow_history_returns_events_in_order(conn) -> None:
+def test_get_workflow_history_returns_events_in_order(conn: sqlite3.Connection) -> None:
     log_task_event(
         conn, workflow_id="wf-1", task_id="task-1",
         old_state="pending", new_state="ready", timestamp=1.0, attempt_count=0,

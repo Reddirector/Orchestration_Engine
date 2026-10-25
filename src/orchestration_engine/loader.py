@@ -1,12 +1,14 @@
 import json
+import sqlite3
 from collections.abc import Callable
+from typing import Any
 
 from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
 from orchestration_engine.runner import run_workflow
 from orchestration_engine.status import get_workflow_status
 
 
-def load_workflow_from_json(json_data: dict) -> Workflow:
+def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
     """
     Parse a workflow definition dict (e.g. loaded from JSON) into a Workflow.
 
@@ -54,7 +56,7 @@ def run_workflow_from_file(
     path: str,
     task_runner: Callable[[Task], bool],
     time_source: Callable[[], float],
-    conn,
+    conn: sqlite3.Connection,
 ) -> WorkflowStatus:
     """
     Load a workflow definition from a JSON file and run it to completion.

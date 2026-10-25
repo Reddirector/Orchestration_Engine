@@ -1,4 +1,5 @@
 import sqlite3
+
 from orchestration_engine.models import RetryPolicy, Task, TaskState
 from orchestration_engine.transitions import can_transition, transition_task
 
@@ -23,7 +24,7 @@ def test_succeeded_to_running_is_not_allowed() -> None:
     assert can_transition(TaskState.SUCCEEDED, TaskState.RUNNING) is False
 
 
-def test_pending_to_ready_transition(conn) -> None:
+def test_pending_to_ready_transition(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(
@@ -40,7 +41,7 @@ def test_pending_to_ready_transition(conn) -> None:
     assert task.state == TaskState.READY
 
 
-def test_pending_to_succeeded_transition_is_rejected(conn) -> None:
+def test_pending_to_succeeded_transition_is_rejected(conn: sqlite3.Connection) -> None:
     retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
 
     task = Task(

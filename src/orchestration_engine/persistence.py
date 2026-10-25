@@ -1,4 +1,5 @@
 import sqlite3
+from typing import Any
 
 DB_PATH = "orchestration.db"
 
@@ -35,8 +36,13 @@ def log_task_event(
     timestamp: float,
     attempt_count: int,
 ) -> None:
+    query = (
+        "INSERT INTO task_events "
+        "(workflow_id, task_id, old_state, new_state, timestamp, attempt_count) "
+        "VALUES (?, ?, ?, ?, ?, ?)"
+    )
     conn.execute(
-        "INSERT INTO task_events (workflow_id, task_id, old_state, new_state, timestamp, attempt_count) VALUES (?, ?, ?, ?, ?, ?)",
+        query,
         (workflow_id, task_id, old_state, new_state, timestamp, attempt_count),
     )
     conn.commit()
@@ -45,7 +51,7 @@ def log_task_event(
 def get_workflow_history(
     conn: sqlite3.Connection,
     workflow_id: str,
-) -> list[tuple]:
+) -> list[tuple[Any, ...]]:
     """
     Return every logged task-state transition for a workflow, ordered by
     timestamp. Each row is (id, workflow_id, task_id, old_state, new_state,

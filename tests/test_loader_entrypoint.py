@@ -1,10 +1,12 @@
 import json
+import sqlite3
+from pathlib import Path
 
 from orchestration_engine.loader import run_workflow_from_file
 from orchestration_engine.models import WorkflowStatus
 
 
-def test_run_workflow_from_file_succeeds(tmp_path, conn) -> None:
+def test_run_workflow_from_file_succeeds(tmp_path: Path, conn: sqlite3.Connection) -> None:
     workflow_data = {
         "workflow_id": "wf-file-1",
         "name": "File Test",
