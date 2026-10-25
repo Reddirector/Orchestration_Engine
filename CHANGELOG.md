@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-25
+
+### Added
+- Standard library `argparse` CLI: console script `orchestration-engine` and `python -m orchestration_engine`.
+  - Commands: `validate`, `run`, `resume`, `status`, `history`, `runs`.
+  - Exit code contract: `0` (succeeded), `1` (failed/cancelled), `2` (usage/definition error), `3` (database/internal error).
+  - `--json` machine-readable output mode for all commands with stable schema.
+  - Dynamic `--runner module:function` loader via `importlib.import_module` with current working directory prepended to `sys.path`.
+- Structured logging:
+  - Library logger `orchestration_engine` configured with `logging.NullHandler()` to avoid hijacking client application logging.
+  - Transitions logged at `INFO`, retries and timeouts at `WARNING`, persistence failures at `ERROR`.
+  - Structured `extra` fields: `workflow_id`, `run_id`, `task_id`, `old_state`, `new_state`, `attempt`.
+  - CLI global `--log-level [DEBUG|INFO|WARNING|ERROR]` flag.
+- Documentation: `docs/cli.md` complete CLI reference and JSON schemas, and ADR 014.
+- `examples/runners.py`: Standard runners for CLI and examples.
+
+### Behavior changes
+- None to public library API (`orchestration_engine.__all__` remains frozen).
+
 ## [0.5.0] - 2026-10-25
 
 ### Added

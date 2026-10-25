@@ -68,6 +68,25 @@ status = run_workflow_from_file("workflow.json", task_runner, time.time, conn)
 print(status)  # WorkflowStatus.SUCCEEDED
 ```
 
+## Command-Line Interface (CLI)
+
+`orchestration-engine` includes a full-featured CLI for validating, executing, and inspecting workflows directly from the terminal:
+
+```bash
+# Validate workflow definition
+orchestration-engine validate examples/simple_workflow.json
+
+# Run workflow with an SQLite database
+orchestration-engine run examples/simple_workflow.json --runner examples.runners:run --db workflows.db
+
+# Inspect run status, transition history, and run list
+orchestration-engine status <run_id> --db workflows.db
+orchestration-engine history <run_id> --db workflows.db
+orchestration-engine runs --db workflows.db
+```
+
+For full CLI documentation, exit codes, and JSON schemas, see [docs/cli.md](docs/cli.md).
+
 ## Durability and Crash Recovery
 
 Every execution is tracked as a distinct run with an explicit or automatically generated `run_id`:
