@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-25
+
+### Added
+- Concurrency control in `run_workflow`, `run_workflow_from_file`, and `resume_run`:
+  - `max_concurrency: int = 1`: Allows executing independent ready tasks concurrently up to the configured limit.
+  - `executor: Literal["thread", "process", "_inline"] = "thread"`: Selects execution backend.
+- Single-Writer Coordinator:
+  - Exclusive coordinator thread ownership of all SQLite operations and state transitions, guaranteeing zero thread contention or `sqlite3.ProgrammingError`.
+- Process backend (`executor="process"`):
+  - Uses `multiprocessing.get_context("spawn")`.
+  - Enforces picklability check of `task_runner` before workflow execution starts.
+  - On task timeout, worker child process is terminated with `SIGTERM` and forcefully killed with `SIGKILL` after a grace period.
+  - Child crashes report exit code in `task.last_error` and enter standard retry/fail lifecycle.
+- Internal `_inline` executor for deterministic testing with virtual clocks and fake sleep.
+
+### Behavior changes
+- Tasks can run in parallel up to `max_concurrency`. With `max_concurrency=1` and `executor="thread"`, execution order and behavior remain strictly backward compatible.
+
 ## [0.3.0] - 2026-10-25
 
 ### Behavior changes

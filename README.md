@@ -92,6 +92,39 @@ resumed_status = resume_run(conn, run_id, task_runner, time.time)
 # Completed tasks are never re-run; interrupted tasks are retried per policy.
 ```
 
+## Concurrency
+
+Tasks can be executed concurrently up to `max_concurrency` using either threads or spawned child processes:
+
+```python
+# Run with up to 4 parallel workers using threads
+run_id = run_workflow(
+    workflow,
+    task_states,
+    time.time,
+    task_runner,
+    conn,
+    max_concurrency=4,
+    executor="thread",
+)
+
+# Run with isolated child processes
+run_id = run_workflow(
+    workflow,
+    task_states,
+    time.time,
+    task_runner,
+    conn,
+    max_concurrency=4,
+    executor="process",
+)
+```
+
+### Architecture: Single-Writer Coordinator
+- **Safety**: The main coordinator thread calling `run_workflow` retains exclusive access to SQLite and performs all state transitions. No database connections are ever shared across threads or processes, completely eliminating `sqlite3.ProgrammingError` or database contention.
+- **Thread Backend (`executor="thread"`)**: Lightweight concurrency using `concurrent.futures.ThreadPoolExecutor`. Note that Python threads cannot be preemptively killed; a timed-out task is abandoned by the coordinator and marked failed/retried, while its thread runs to completion in the background.
+- **Process Backend (`executor="process"`)**: True process isolation using `multiprocessing.get_context("spawn")`. On timeout, child processes are terminated with `SIGTERM` and killed with `SIGKILL` after a short grace period. Requires `task_runner` to be picklable.
+
 ## Public API
 
 | Name | Purpose |
