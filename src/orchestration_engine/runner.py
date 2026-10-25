@@ -1,11 +1,14 @@
 import concurrent.futures
 import json
+import multiprocessing
+import multiprocessing.connection
+import pickle
 import sqlite3
 import time
 import uuid
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Literal
+from typing import Any, Literal
 
 from orchestration_engine.errors import (
     OrchestrationError,
@@ -20,7 +23,24 @@ from orchestration_engine.status import get_workflow_status
 from orchestration_engine.transitions import mirror_task_states
 from orchestration_engine.validation import get_workflow_validation_error
 
-ExecutorType = Literal["thread"]
+ExecutorType = Literal["thread", "process", "_inline"]
+
+
+def _process_task_target(
+    task: Task,
+    task_runner: Callable[[Task], bool],
+    pipe: Any,
+) -> None:
+    try:
+        ok = task_runner(task)
+        pipe.send((bool(ok), None))
+    except BaseException as exc:
+        pipe.send((False, f"{type(exc).__name__}: {exc}"[:2000]))
+    finally:
+        try:
+            pipe.close()
+        except Exception:
+            pass
 
 
 def _serialize_workflow(workflow: Workflow) -> str:
@@ -92,10 +112,18 @@ def run_workflow(
     ):
         raise WorkflowValidationError("max_concurrency must be an integer >= 1")
 
-    if executor != "thread":
+    if executor not in ("thread", "process", "_inline"):
         raise WorkflowValidationError(
-            f"invalid executor {executor!r}, must be 'thread'"
+            f"invalid executor {executor!r}, must be 'thread' or 'process'"
         )
+
+    if executor == "process":
+        try:
+            pickle.dumps(task_runner)
+        except Exception as exc:
+            raise WorkflowValidationError(
+                f"task_runner must be picklable for process executor: {exc}"
+            ) from exc
 
     actual_run_id = run_id if run_id is not None else uuid.uuid4().hex
     for task in workflow.tasks:
@@ -118,15 +146,26 @@ def run_workflow(
     except sqlite3.Error as e:
         raise PersistenceError(f"Failed to record run start: {e}") from e
 
-    _run_coordinator_thread(
-        workflow=workflow,
-        task_states=task_states,
-        time_source=time_source,
-        task_runner=task_runner,
-        conn=conn,
-        sleep=sleep,
-        max_concurrency=max_concurrency,
-    )
+    if executor == "process":
+        _run_coordinator_process(
+            workflow=workflow,
+            task_states=task_states,
+            time_source=time_source,
+            task_runner=task_runner,
+            conn=conn,
+            sleep=sleep,
+            max_concurrency=max_concurrency,
+        )
+    else:
+        _run_coordinator_thread(
+            workflow=workflow,
+            task_states=task_states,
+            time_source=time_source,
+            task_runner=task_runner,
+            conn=conn,
+            sleep=sleep,
+            max_concurrency=max_concurrency,
+        )
 
     finished_at = time_source()
     final_status = get_workflow_status(workflow).value
@@ -244,6 +283,160 @@ def _run_coordinator_thread(
                     fail_task(task, fail_time, conn, task_states)
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
+
+
+def _run_coordinator_process(
+    workflow: Workflow,
+    task_states: dict[str, TaskState],
+    time_source: Callable[[], float],
+    task_runner: Callable[[Task], bool],
+    conn: sqlite3.Connection,
+    sleep: Callable[[float], None],
+    max_concurrency: int,
+) -> None:
+    ctx = multiprocessing.get_context("spawn")
+    # map task_id -> (task, proc, pipe, mono_start, mono_deadline)
+    in_flight: dict[
+        str, tuple[Task, Any, Any, float, float | None]
+    ] = {}
+
+    try:
+        while True:
+            current_time = time_source()
+            schedule_once(workflow, task_states, current_time, conn)
+
+            dispatchable = [
+                t
+                for t in workflow.tasks
+                if t.state == TaskState.READY and t.task_id not in in_flight
+            ]
+            slots = max_concurrency - len(in_flight)
+            to_dispatch = dispatchable[: max(0, slots)]
+
+            for task in to_dispatch:
+                execute_task(task, conn, current_time)
+                parent_conn, child_conn = ctx.Pipe()
+                proc = ctx.Process(
+                    target=_process_task_target,
+                    args=(task, task_runner, child_conn),
+                )
+                proc.start()
+                child_conn.close()
+
+                mono_start = time.monotonic()
+                mono_deadline = (
+                    mono_start + task.timeout_seconds
+                    if task.timeout_seconds is not None
+                    else None
+                )
+                in_flight[task.task_id] = (
+                    task,
+                    proc,
+                    parent_conn,
+                    mono_start,
+                    mono_deadline,
+                )
+
+            if not in_flight:
+                retry_waits = [
+                    t.next_retry_at
+                    for t in workflow.tasks
+                    if t.state == TaskState.RETRY_WAIT and t.next_retry_at is not None
+                ]
+                if not retry_waits:
+                    break
+                wait_time = max(0.0, min(retry_waits) - current_time)
+                sleep(wait_time)
+                continue
+
+            mono_now = time.monotonic()
+            deadlines = [
+                max(0.0, dl - mono_now)
+                for _, _, _, _, dl in in_flight.values()
+                if dl is not None
+            ]
+            wait_candidates = list(deadlines)
+            if len(in_flight) < max_concurrency:
+                retry_cands = [
+                    max(0.0, t.next_retry_at - current_time)
+                    for t in workflow.tasks
+                    if t.state == TaskState.RETRY_WAIT and t.next_retry_at is not None
+                ]
+                wait_candidates.extend(retry_cands)
+
+            wait_timeout = min(wait_candidates) if wait_candidates else None
+
+            pipe_to_tid = {pipe: tid for tid, (_, _, pipe, _, _) in in_flight.items()}
+            ready_pipes: list[Any] = list(
+                multiprocessing.connection.wait(
+                    list(pipe_to_tid.keys()), timeout=wait_timeout
+                )
+            )
+
+            finish_time = time_source()
+            for pipe in ready_pipes:
+                tid = pipe_to_tid[pipe]
+                task, proc, _, _, _ = in_flight.pop(tid)
+                ok = False
+                err: str | None = None
+                try:
+                    if pipe.poll():
+                        ok, err = pipe.recv()
+                    else:
+                        proc.join(timeout=0.2)
+                        err = f"process exited with exitcode {proc.exitcode}"
+                except Exception as exc:
+                    err = f"process communication error: {exc}"
+                finally:
+                    try:
+                        pipe.close()
+                    except Exception:
+                        pass
+                    proc.join(timeout=0.2)
+                    if proc.is_alive():
+                        proc.terminate()
+                        proc.join(timeout=0.1)
+                        if proc.is_alive():
+                            proc.kill()
+                            proc.join(timeout=0.1)
+
+                if ok:
+                    complete_task(task, conn, finish_time, task_states)
+                else:
+                    if err is not None:
+                        task.last_error = err[:2000]
+                    fail_task(task, finish_time, conn, task_states)
+
+            # Check timeouts for remaining child processes
+            mono_now = time.monotonic()
+            for tid, (task, proc, pipe, _, dl) in list(in_flight.items()):
+                if dl is not None and mono_now >= dl:
+                    del in_flight[tid]
+                    try:
+                        pipe.close()
+                    except Exception:
+                        pass
+                    if proc.is_alive():
+                        proc.terminate()
+                        proc.join(timeout=0.2)
+                        if proc.is_alive():
+                            proc.kill()
+                            proc.join(timeout=0.1)
+                    task.last_error = f"timeout after {task.timeout_seconds}s"
+                    fail_time = time_source()
+                    fail_task(task, fail_time, conn, task_states)
+    finally:
+        for _tid, (_task, proc, pipe, _, _) in in_flight.items():
+            try:
+                pipe.close()
+            except Exception:
+                pass
+            if proc.is_alive():
+                proc.terminate()
+                proc.join(timeout=0.1)
+                if proc.is_alive():
+                    proc.kill()
+                    proc.join(timeout=0.1)
 
 
 def resume_run(
