@@ -1,3 +1,4 @@
+import json
 import os
 import sqlite3
 from typing import Any
@@ -68,6 +69,79 @@ def _migrate_database(conn: sqlite3.Connection) -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_task_events_wf ON task_events(workflow_id)")
         conn.execute("PRAGMA user_version = 1")
         conn.commit()
+
+    if current_version < 2:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS task_outputs (
+                run_id TEXT NOT NULL,
+                task_id TEXT NOT NULL,
+                output_json TEXT,
+                error TEXT,
+                PRIMARY KEY (run_id, task_id),
+                FOREIGN KEY (run_id) REFERENCES runs (run_id) ON DELETE CASCADE
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_task_outputs_run ON task_outputs (run_id)"
+        )
+        conn.execute("PRAGMA user_version = 2")
+        conn.commit()
+
+
+def save_task_output(
+    conn: sqlite3.Connection,
+    run_id: str,
+    task_id: str,
+    output_json: str | None,
+    error: str | None,
+) -> None:
+    """
+    Save or update the output of a task execution in the task_outputs table.
+    """
+    cursor = conn.execute("PRAGMA user_version")
+    if cursor.fetchone()[0] < 2:
+        _migrate_database(conn)
+
+    conn.execute(
+        """
+        INSERT INTO task_outputs (run_id, task_id, output_json, error)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(run_id, task_id) DO UPDATE SET
+            output_json = excluded.output_json,
+            error = excluded.error
+        """,
+        (run_id, task_id, output_json, error),
+    )
+    conn.commit()
+
+
+def get_task_outputs(
+    conn: sqlite3.Connection,
+    run_id: str,
+) -> dict[str, Any]:
+    """
+    Retrieve all persisted task outputs for a run.
+    """
+    cursor = conn.execute("PRAGMA user_version")
+    if cursor.fetchone()[0] < 2:
+        _migrate_database(conn)
+
+    cursor = conn.execute(
+        "SELECT task_id, output_json FROM task_outputs WHERE run_id = ?",
+        (run_id,),
+    )
+    outputs: dict[str, Any] = {}
+    for task_id, output_json in cursor.fetchall():
+        if output_json is not None:
+            try:
+                outputs[task_id] = json.loads(output_json)
+            except Exception:
+                outputs[task_id] = output_json
+        else:
+            outputs[task_id] = None
+    return outputs
 
 
 def get_connection(

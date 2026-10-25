@@ -278,8 +278,9 @@ def test_process_task_target_success_and_error() -> None:
 
     p1, c1 = ctx.Pipe()
     _process_task_target(task, lambda _t: True, c1)
-    ok, err = p1.recv()
+    ok, output, err = p1.recv()
     assert ok is True
+    assert output is None
     assert err is None
     p1.close()
 
@@ -289,8 +290,9 @@ def test_process_task_target_success_and_error() -> None:
         raise ValueError("boom")
 
     _process_task_target(task, crasher, c2)
-    ok, err = p2.recv()
+    ok, output, err = p2.recv()
     assert ok is False
+    assert output is None
     assert "ValueError: boom" in (err or "")
     p2.close()
 

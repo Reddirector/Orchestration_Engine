@@ -7,7 +7,7 @@ from .errors import (
     WorkflowValidationError,
 )
 from .loader import load_workflow_from_json, run_workflow_from_file
-from .models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
+from .models import RetryPolicy, Task, TaskResult, TaskState, Workflow, WorkflowStatus
 from .persistence import get_connection, get_run_history, get_workflow_history, list_runs
 from .runner import resume_run, run_workflow
 from .status import get_run_status, get_workflow_status
@@ -20,6 +20,7 @@ except importlib.metadata.PackageNotFoundError:
 __all__ = [
     "__version__",
     "Task",
+    "TaskResult",
     "Workflow",
     "RetryPolicy",
     "TaskState",

@@ -16,26 +16,40 @@ from orchestration_engine.errors import (
     WorkflowValidationError,
 )
 from orchestration_engine.executor import complete_task, execute_task, fail_task
-from orchestration_engine.models import Task, TaskState, Workflow, WorkflowStatus
-from orchestration_engine.persistence import _migrate_database
+from orchestration_engine.models import (
+    Task,
+    TaskResult,
+    TaskState,
+    Workflow,
+    WorkflowStatus,
+)
+from orchestration_engine.persistence import (
+    _migrate_database,
+    get_task_outputs,
+    save_task_output,
+)
 from orchestration_engine.scheduler import schedule_once
 from orchestration_engine.status import get_workflow_status
 from orchestration_engine.transitions import mirror_task_states
 from orchestration_engine.validation import get_workflow_validation_error
 
 ExecutorType = Literal["thread", "process", "_inline"]
+TaskRunnerCallable = Callable[[Task], bool | TaskResult]
 
 
 def _process_task_target(
     task: Task,
-    task_runner: Callable[[Task], bool],
+    task_runner: TaskRunnerCallable,
     pipe: Any,
 ) -> None:
     try:
-        ok = task_runner(task)
-        pipe.send((bool(ok), None))
+        ret = task_runner(task)
+        if isinstance(ret, TaskResult):
+            pipe.send((ret.ok, ret.output, ret.error))
+        else:
+            pipe.send((bool(ret), None, None))
     except BaseException as exc:
-        pipe.send((False, f"{type(exc).__name__}: {exc}"[:2000]))
+        pipe.send((False, None, f"{type(exc).__name__}: {exc}"[:2000]))
     finally:
         try:
             pipe.close()
@@ -67,11 +81,49 @@ def _serialize_workflow(workflow: Workflow) -> str:
     return json.dumps(data)
 
 
+def _handle_task_success(
+    task: Task,
+    output: Any,
+    run_id: str,
+    conn: sqlite3.Connection,
+    finish_time: float,
+    task_states: dict[str, TaskState],
+    run_outputs: dict[str, Any],
+) -> None:
+    output_json: str | None = None
+    if output is not None:
+        try:
+            output_json = json.dumps(output)
+        except Exception as exc:
+            task.last_error = f"Task output is not JSON-serializable: {exc}"[:2000]
+            save_task_output(conn, run_id, task.task_id, None, task.last_error)
+            fail_task(task, finish_time, conn, task_states)
+            return
+
+    save_task_output(conn, run_id, task.task_id, output_json, None)
+    run_outputs[task.task_id] = output
+    complete_task(task, conn, finish_time, task_states)
+
+
+def _handle_task_failure(
+    task: Task,
+    error: str | None,
+    run_id: str,
+    conn: sqlite3.Connection,
+    finish_time: float,
+    task_states: dict[str, TaskState],
+) -> None:
+    if error is not None:
+        task.last_error = error[:2000]
+    save_task_output(conn, run_id, task.task_id, None, task.last_error)
+    fail_task(task, finish_time, conn, task_states)
+
+
 def run_workflow(
     workflow: Workflow,
     task_states: dict[str, TaskState],
     time_source: Callable[[], float],
-    task_runner: Callable[[Task], bool],
+    task_runner: TaskRunnerCallable,
     conn: sqlite3.Connection,
     sleep: Callable[[float], None] = time.sleep,
     *,
@@ -87,17 +139,11 @@ def run_workflow(
     executor ("thread" or "process"). An internal "_inline" executor is available
     for deterministic virtual-clock tests.
 
-    For each task, task_runner is called with the Task and must return True
-    on success or False on failure; failures are retried according to the
-    task's retry_policy. A task_runner that raises, or that exceeds the
-    task's timeout_seconds, is treated as a failure. Note that Python threads
-    cannot be killed: with executor="thread", a timed-out callable keeps
-    running in the background while the engine moves on. With executor="process",
-    timed-out child processes are terminated and killed.
-
-    Mutates the Task objects inside workflow in place and persists state
-    transitions via conn using a single-writer coordinator model.
-    Raises WorkflowValidationError if the workflow or parameters fail validation.
+    For each task, task_runner is called with the Task and may return bool
+    or TaskResult; failures are retried according to the task's retry_policy.
+    Outputs from TaskResult are persisted in SQLite and injected into dependent
+    tasks' inputs attribute. Non-JSON-serializable outputs are treated as failed
+    attempts.
 
     Returns the run_id (either passed in or freshly generated).
     """
@@ -146,6 +192,8 @@ def run_workflow(
     except sqlite3.Error as e:
         raise PersistenceError(f"Failed to record run start: {e}") from e
 
+    run_outputs = get_task_outputs(conn, actual_run_id)
+
     if executor == "_inline":
         _run_coordinator_inline(
             workflow=workflow,
@@ -154,6 +202,8 @@ def run_workflow(
             task_runner=task_runner,
             conn=conn,
             sleep=sleep,
+            run_id=actual_run_id,
+            run_outputs=run_outputs,
         )
     elif executor == "process":
         _run_coordinator_process(
@@ -164,6 +214,8 @@ def run_workflow(
             conn=conn,
             sleep=sleep,
             max_concurrency=max_concurrency,
+            run_id=actual_run_id,
+            run_outputs=run_outputs,
         )
     else:
         _run_coordinator_thread(
@@ -174,6 +226,8 @@ def run_workflow(
             conn=conn,
             sleep=sleep,
             max_concurrency=max_concurrency,
+            run_id=actual_run_id,
+            run_outputs=run_outputs,
         )
 
     finished_at = time_source()
@@ -195,9 +249,11 @@ def _run_coordinator_inline(
     workflow: Workflow,
     task_states: dict[str, TaskState],
     time_source: Callable[[], float],
-    task_runner: Callable[[Task], bool],
+    task_runner: TaskRunnerCallable,
     conn: sqlite3.Connection,
     sleep: Callable[[float], None],
+    run_id: str,
+    run_outputs: dict[str, Any],
 ) -> None:
     while True:
         current_time = time_source()
@@ -216,33 +272,82 @@ def _run_coordinator_inline(
             continue
 
         for task in ready_tasks:
+            task.inputs = {
+                dep: run_outputs[dep]
+                for dep in task.dependencies
+                if dep in run_outputs
+            }
             execute_task(task, conn, current_time)
             try:
-                success = task_runner(task)
+                ret = task_runner(task)
             except Exception as exc:
-                task.last_error = f"{type(exc).__name__}: {exc}"[:2000]
                 finish_time = time_source()
-                fail_task(task, finish_time, conn, task_states)
+                _handle_task_failure(
+                    task,
+                    f"{type(exc).__name__}: {exc}",
+                    run_id,
+                    conn,
+                    finish_time,
+                    task_states,
+                )
                 continue
 
             finish_time = time_source()
-            if success:
-                complete_task(task, conn, finish_time, task_states)
+            if isinstance(ret, TaskResult):
+                if ret.ok:
+                    _handle_task_success(
+                        task,
+                        ret.output,
+                        run_id,
+                        conn,
+                        finish_time,
+                        task_states,
+                        run_outputs,
+                    )
+                else:
+                    _handle_task_failure(
+                        task,
+                        ret.error,
+                        run_id,
+                        conn,
+                        finish_time,
+                        task_states,
+                    )
             else:
-                fail_task(task, finish_time, conn, task_states)
+                if ret:
+                    _handle_task_success(
+                        task,
+                        None,
+                        run_id,
+                        conn,
+                        finish_time,
+                        task_states,
+                        run_outputs,
+                    )
+                else:
+                    _handle_task_failure(
+                        task,
+                        None,
+                        run_id,
+                        conn,
+                        finish_time,
+                        task_states,
+                    )
 
 
 def _run_coordinator_thread(
     workflow: Workflow,
     task_states: dict[str, TaskState],
     time_source: Callable[[], float],
-    task_runner: Callable[[Task], bool],
+    task_runner: TaskRunnerCallable,
     conn: sqlite3.Connection,
     sleep: Callable[[float], None],
     max_concurrency: int,
+    run_id: str,
+    run_outputs: dict[str, Any],
 ) -> None:
     pool = ThreadPoolExecutor(max_workers=max_concurrency)
-    in_flight: dict[Future[bool], tuple[Task, float, float | None]] = {}
+    in_flight: dict[Future[Any], tuple[Task, float, float | None]] = {}
 
     try:
         while True:
@@ -259,6 +364,11 @@ def _run_coordinator_thread(
             to_dispatch = dispatchable[: max(0, slots)]
 
             for task in to_dispatch:
+                task.inputs = {
+                    dep: run_outputs[dep]
+                    for dep in task.dependencies
+                    if dep in run_outputs
+                }
                 execute_task(task, conn, current_time)
                 mono_start = time.monotonic()
                 mono_deadline = (
@@ -311,26 +421,80 @@ def _run_coordinator_thread(
                 try:
                     exc = fut.exception()
                     if exc is not None:
-                        task.last_error = f"{type(exc).__name__}: {exc}"[:2000]
-                        fail_task(task, finish_time, conn, task_states)
+                        _handle_task_failure(
+                            task,
+                            f"{type(exc).__name__}: {exc}",
+                            run_id,
+                            conn,
+                            finish_time,
+                            task_states,
+                        )
                     else:
-                        ok = fut.result()
-                        if ok:
-                            complete_task(task, conn, finish_time, task_states)
+                        ret = fut.result()
+                        if isinstance(ret, TaskResult):
+                            if ret.ok:
+                                _handle_task_success(
+                                    task,
+                                    ret.output,
+                                    run_id,
+                                    conn,
+                                    finish_time,
+                                    task_states,
+                                    run_outputs,
+                                )
+                            else:
+                                _handle_task_failure(
+                                    task,
+                                    ret.error,
+                                    run_id,
+                                    conn,
+                                    finish_time,
+                                    task_states,
+                                )
                         else:
-                            fail_task(task, finish_time, conn, task_states)
+                            if ret:
+                                _handle_task_success(
+                                    task,
+                                    None,
+                                    run_id,
+                                    conn,
+                                    finish_time,
+                                    task_states,
+                                    run_outputs,
+                                )
+                            else:
+                                _handle_task_failure(
+                                    task,
+                                    None,
+                                    run_id,
+                                    conn,
+                                    finish_time,
+                                    task_states,
+                                )
                 except Exception as exc:
-                    task.last_error = f"{type(exc).__name__}: {exc}"[:2000]
-                    fail_task(task, finish_time, conn, task_states)
+                    _handle_task_failure(
+                        task,
+                        f"{type(exc).__name__}: {exc}",
+                        run_id,
+                        conn,
+                        finish_time,
+                        task_states,
+                    )
 
             # Check timeouts on remaining in-flight tasks
             mono_now = time.monotonic()
             for fut, (task, _, dl) in list(in_flight.items()):
                 if dl is not None and mono_now >= dl:
                     del in_flight[fut]
-                    task.last_error = f"timeout after {task.timeout_seconds}s"
                     fail_time = time_source()
-                    fail_task(task, fail_time, conn, task_states)
+                    _handle_task_failure(
+                        task,
+                        f"timeout after {task.timeout_seconds}s",
+                        run_id,
+                        conn,
+                        fail_time,
+                        task_states,
+                    )
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
 
@@ -339,10 +503,12 @@ def _run_coordinator_process(
     workflow: Workflow,
     task_states: dict[str, TaskState],
     time_source: Callable[[], float],
-    task_runner: Callable[[Task], bool],
+    task_runner: TaskRunnerCallable,
     conn: sqlite3.Connection,
     sleep: Callable[[float], None],
     max_concurrency: int,
+    run_id: str,
+    run_outputs: dict[str, Any],
 ) -> None:
     ctx = multiprocessing.get_context("spawn")
     # map task_id -> (task, proc, pipe, mono_start, mono_deadline)
@@ -364,6 +530,11 @@ def _run_coordinator_process(
             to_dispatch = dispatchable[: max(0, slots)]
 
             for task in to_dispatch:
+                task.inputs = {
+                    dep: run_outputs[dep]
+                    for dep in task.dependencies
+                    if dep in run_outputs
+                }
                 execute_task(task, conn, current_time)
                 parent_conn, child_conn = ctx.Pipe()
                 proc = ctx.Process(
@@ -428,10 +599,11 @@ def _run_coordinator_process(
                 tid = pipe_to_tid[pipe]
                 task, proc, _, _, _ = in_flight.pop(tid)
                 ok = False
+                output: Any = None
                 err: str | None = None
                 try:
                     if pipe.poll():
-                        ok, err = pipe.recv()
+                        ok, output, err = pipe.recv()
                     else:
                         proc.join(timeout=0.2)
                         err = f"process exited with exitcode {proc.exitcode}"
@@ -451,11 +623,24 @@ def _run_coordinator_process(
                             proc.join(timeout=0.1)
 
                 if ok:
-                    complete_task(task, conn, finish_time, task_states)
+                    _handle_task_success(
+                        task,
+                        output,
+                        run_id,
+                        conn,
+                        finish_time,
+                        task_states,
+                        run_outputs,
+                    )
                 else:
-                    if err is not None:
-                        task.last_error = err[:2000]
-                    fail_task(task, finish_time, conn, task_states)
+                    _handle_task_failure(
+                        task,
+                        err,
+                        run_id,
+                        conn,
+                        finish_time,
+                        task_states,
+                    )
 
             # Check timeouts for remaining child processes
             mono_now = time.monotonic()
@@ -472,9 +657,15 @@ def _run_coordinator_process(
                         if proc.is_alive():
                             proc.kill()
                             proc.join(timeout=0.1)
-                    task.last_error = f"timeout after {task.timeout_seconds}s"
                     fail_time = time_source()
-                    fail_task(task, fail_time, conn, task_states)
+                    _handle_task_failure(
+                        task,
+                        f"timeout after {task.timeout_seconds}s",
+                        run_id,
+                        conn,
+                        fail_time,
+                        task_states,
+                    )
     finally:
         for _tid, (_task, proc, pipe, _, _) in in_flight.items():
             try:
@@ -492,7 +683,7 @@ def _run_coordinator_process(
 def resume_run(
     conn: sqlite3.Connection,
     run_id: str,
-    task_runner: Callable[[Task], bool],
+    task_runner: TaskRunnerCallable,
     time_source: Callable[[], float],
     *,
     sleep: Callable[[float], None] = time.sleep,
@@ -503,7 +694,8 @@ def resume_run(
     Resume an interrupted or pending workflow run.
 
     Rebuilds the Workflow from definition_json stored in the database,
-    restores each task's latest state, attempt_count, and next_retry_at.
+    restores each task's latest state, attempt_count, next_retry_at,
+    and task outputs.
     Never re-executes SUCCEEDED tasks. Any task found in RUNNING state
     is treated as an interrupted failure with last_error set to
     "interrupted: process exited while running", and retried/failed per policy.

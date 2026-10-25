@@ -15,7 +15,7 @@ def test_schema_v1_fresh_db(tmp_path: Path) -> None:
     conn = get_connection(db_file)
     try:
         cur = conn.execute("PRAGMA user_version")
-        assert cur.fetchone()[0] == 1
+        assert cur.fetchone()[0] >= 1
 
         # Check runs table
         cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='runs'")
@@ -66,7 +66,7 @@ def test_migration_v0_to_v1(tmp_path: Path) -> None:
     conn = get_connection(db_file)
     try:
         cur = conn.execute("PRAGMA user_version")
-        assert cur.fetchone()[0] == 1
+        assert cur.fetchone()[0] >= 1
 
         # Check legacy row got migrated run_id
         cur = conn.execute("SELECT run_id FROM task_events WHERE task_id = 'task-1'")

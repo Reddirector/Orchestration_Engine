@@ -1,0 +1,161 @@
+import sqlite3
+import time
+from dataclasses import FrozenInstanceError
+from typing import Any
+
+import pytest
+
+from orchestration_engine.models import (
+    RetryPolicy,
+    Task,
+    TaskResult,
+    TaskState,
+    Workflow,
+    WorkflowStatus,
+)
+from orchestration_engine.persistence import _migrate_database
+from orchestration_engine.runner import resume_run, run_workflow
+
+
+def test_task_result_frozen() -> None:
+    res = TaskResult(ok=True, output={"key": "val"}, error=None)
+    assert res.ok is True
+    assert res.output == {"key": "val"}
+    assert res.error is None
+
+    with pytest.raises(FrozenInstanceError):
+        res.ok = False  # type: ignore[misc]
+
+
+def test_task_inputs_field_default() -> None:
+    task = Task("t1", "wf", "T1", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    assert task.inputs == {}
+
+    task_custom = Task(
+        "t2", "wf", "T2", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0), inputs={"dep": 42}
+    )
+    assert task_custom.inputs == {"dep": 42}
+
+
+def test_schema_v2_migration(conn: sqlite3.Connection) -> None:
+    _migrate_database(conn)
+    cur = conn.execute("PRAGMA user_version")
+    assert cur.fetchone()[0] == 2
+
+    cur = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='task_outputs'"
+    )
+    assert cur.fetchone() is not None
+
+
+def test_data_flow_pipeline_a_b_to_c(conn: sqlite3.Connection) -> None:
+    tA = Task("tA", "wf", "A", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    tB = Task("tB", "wf", "B", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    tC = Task("tC", "wf", "C", "d", ["tA", "tB"], TaskState.PENDING, RetryPolicy(1, 1.0))
+    wf = Workflow("wf", "wf", "desc", [tA, tB, tC])
+
+    c_inputs: dict[str, Any] = {}
+
+    def runner(task: Task) -> Any:
+        if task.task_id == "tA":
+            return TaskResult(ok=True, output=10)
+        elif task.task_id == "tB":
+            return TaskResult(ok=True, output=20)
+        elif task.task_id == "tC":
+            nonlocal c_inputs
+            c_inputs = dict(task.inputs)
+            total = task.inputs["tA"] + task.inputs["tB"]
+            return TaskResult(ok=True, output=total)
+        return True
+
+    run_id = run_workflow(wf, {}, time.time, runner, conn)
+    assert tA.state == TaskState.SUCCEEDED
+    assert tB.state == TaskState.SUCCEEDED
+    assert tC.state == TaskState.SUCCEEDED
+    assert c_inputs == {"tA": 10, "tB": 20}
+
+    # Verify persisted outputs in database
+    cur = conn.execute(
+        "SELECT task_id, output_json FROM task_outputs WHERE run_id = ? ORDER BY task_id ASC",
+        (run_id,),
+    )
+    rows = cur.fetchall()
+    assert len(rows) == 3
+    assert rows[0] == ("tA", "10")
+    assert rows[1] == ("tB", "20")
+    assert rows[2] == ("tC", "30")
+
+
+def test_legacy_bool_runner_still_works(conn: sqlite3.Connection) -> None:
+    t = Task("t1", "wf", "T1", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    wf = Workflow("wf", "wf", "desc", [t])
+
+    run_id = run_workflow(wf, {}, time.time, lambda _t: True, conn)
+    assert t.state == TaskState.SUCCEEDED
+
+    cur = conn.execute("SELECT output_json FROM task_outputs WHERE run_id = ?", (run_id,))
+    row = cur.fetchone()
+    assert row is not None
+    assert row[0] is None
+
+
+def test_non_json_serializable_output_fails_task(conn: sqlite3.Connection) -> None:
+    t = Task("t1", "wf", "T1", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    wf = Workflow("wf", "wf", "desc", [t])
+
+    class Unserializable:
+        pass
+
+    def runner(_task: Task) -> TaskResult:
+        return TaskResult(ok=True, output=Unserializable())
+
+    run_workflow(wf, {}, time.time, runner, conn)
+    assert t.state == TaskState.FAILED
+    assert t.last_error is not None
+    assert "JSON" in t.last_error or "serializ" in t.last_error.lower()
+
+
+def test_data_flow_survives_resume(conn: sqlite3.Connection) -> None:
+    from orchestration_engine.persistence import save_task_output
+    from orchestration_engine.runner import _serialize_workflow
+    from orchestration_engine.transitions import transition_task
+
+    tA = Task("tA", "wf", "A", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    tB = Task("tB", "wf", "B", "d", ["tA"], TaskState.PENDING, RetryPolicy(2, 1.0))
+    wf = Workflow("wf", "wf", "desc", [tA, tB])
+    run_id = "interrupted-flow-run"
+
+    tA._run_id = run_id
+    tB._run_id = run_id
+
+    _migrate_database(conn)
+    conn.execute(
+        """
+        INSERT INTO runs (run_id, workflow_id, started_at, finished_at, status, definition_json)
+        VALUES (?, ?, 100.0, NULL, 'running', ?)
+        """,
+        (run_id, "wf", _serialize_workflow(wf)),
+    )
+    transition_task(tA, TaskState.READY, conn, 100.0)
+    tA.attempt_count = 1
+    transition_task(tA, TaskState.RUNNING, conn, 101.0)
+    transition_task(tA, TaskState.SUCCEEDED, conn, 102.0)
+    save_task_output(conn, run_id, "tA", '{"msg": "hello from A"}', None)
+
+    transition_task(tB, TaskState.READY, conn, 103.0)
+    tB.attempt_count = 1
+    transition_task(tB, TaskState.RUNNING, conn, 104.0)
+    conn.commit()
+
+    b_received_inputs = {}
+
+    def resume_runner(task: Task) -> Any:
+        if task.task_id == "tB":
+            nonlocal b_received_inputs
+            b_received_inputs = dict(task.inputs)
+            return TaskResult(ok=True, output="B finished")
+        return True
+
+    status = resume_run(conn, run_id, resume_runner, time.time)
+    assert status == WorkflowStatus.SUCCEEDED
+    assert b_received_inputs == {"tA": {"msg": "hello from A"}}

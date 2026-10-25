@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Any
 
 
 class TaskState(StrEnum):
@@ -57,6 +58,22 @@ class Task:
     timeout_seconds: float | None = 30.0
     last_error: str | None = None
     _run_id: str | None = None
+    inputs: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class TaskResult:
+    """
+    Result returned by a task runner callable.
+
+    Attributes:
+        ok: Whether the task succeeded.
+        output: Output data produced by the task (must be JSON-serializable).
+        error: Optional error message if the task failed.
+    """
+    ok: bool
+    output: Any = None
+    error: str | None = None
 
 
 @dataclass
