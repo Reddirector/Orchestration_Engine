@@ -109,3 +109,51 @@ def test_connection_hardening(tmp_path: Path) -> None:
         assert cur.fetchone()[0] == 5000
     finally:
         conn_mem.close()
+
+
+def test_run_id_plumbing(conn: sqlite3.Connection) -> None:
+    from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow
+    from orchestration_engine.runner import run_workflow
+
+    task = Task("t1", "wf1", "task 1", "desc", [], TaskState.PENDING, RetryPolicy(1, 1))
+    wf = Workflow("wf1", "wf", "desc", [task])
+
+    # 1. run_workflow returns generated run_id
+    run_id_1 = run_workflow(wf, {}, lambda: 100.0, lambda _t: True, conn)
+    assert isinstance(run_id_1, str)
+    assert len(run_id_1) == 32
+
+    # Check runs table
+    cur = conn.execute(
+        "SELECT run_id, workflow_id, started_at, finished_at, status FROM runs WHERE run_id = ?",
+        (run_id_1,),
+    )
+    row = cur.fetchone()
+    assert row is not None
+    assert row[0] == run_id_1
+    assert row[1] == "wf1"
+    assert row[2] == 100.0
+    assert row[3] == 100.0
+    assert row[4] == "succeeded"
+
+    # Check task_events tagged with run_id
+    cur = conn.execute("SELECT run_id FROM task_events WHERE run_id = ?", (run_id_1,))
+    events = cur.fetchall()
+    assert len(events) >= 2  # PENDING->READY, READY->RUNNING, RUNNING->SUCCEEDED
+
+    # 2. Explicit run_id
+    task2 = Task("t1", "wf1", "task 1", "desc", [], TaskState.PENDING, RetryPolicy(1, 1))
+    wf2 = Workflow("wf1", "wf", "desc", [task2])
+    run_id_2 = run_workflow(
+        wf2, {}, lambda: 200.0, lambda _t: True, conn, run_id="custom-run-001"
+    )
+    assert run_id_2 == "custom-run-001"
+
+    cur = conn.execute("SELECT status FROM runs WHERE run_id = 'custom-run-001'")
+    assert cur.fetchone()[0] == "succeeded"
+
+    # Verify both runs exist separately in get_run_history
+    hist1 = get_run_history(conn, run_id_1)
+    hist2 = get_run_history(conn, "custom-run-001")
+    assert len(hist1) > 0
+    assert len(hist2) > 0

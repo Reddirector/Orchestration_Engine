@@ -117,6 +117,8 @@ def run_workflow_from_file(
     task_runner: Callable[[Task], bool],
     time_source: Callable[[], float],
     conn: sqlite3.Connection,
+    *,
+    run_id: str | None = None,
 ) -> WorkflowStatus:
     """
     Load a workflow definition from a JSON file and run it to completion.
@@ -130,6 +132,13 @@ def run_workflow_from_file(
 
     workflow = load_workflow_from_json(json_data)
     task_states: dict[str, TaskState] = {}
-    run_workflow(workflow, task_states, time_source, task_runner, conn)
+    run_workflow(
+        workflow,
+        task_states,
+        time_source,
+        task_runner,
+        conn,
+        run_id=run_id,
+    )
 
     return get_workflow_status(workflow)

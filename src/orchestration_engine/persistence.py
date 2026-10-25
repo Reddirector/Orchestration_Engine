@@ -110,20 +110,38 @@ def log_task_event(
     new_state: str,
     timestamp: float,
     attempt_count: int,
+    run_id: str | None = None,
+    next_retry_at: float | None = None,
+    error: str | None = None,
 ) -> None:
     """
     Append a task state transition event to the task_events audit table.
     Raises PersistenceError if the database write fails.
     """
+    cursor = conn.execute("PRAGMA user_version")
+    if cursor.fetchone()[0] < 1:
+        _migrate_database(conn)
+
     query = (
         "INSERT INTO task_events "
-        "(workflow_id, task_id, old_state, new_state, timestamp, attempt_count) "
-        "VALUES (?, ?, ?, ?, ?, ?)"
+        "(workflow_id, task_id, old_state, new_state, timestamp, attempt_count, "
+        "run_id, next_retry_at, error) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     try:
         conn.execute(
             query,
-            (workflow_id, task_id, old_state, new_state, timestamp, attempt_count),
+            (
+                workflow_id,
+                task_id,
+                old_state,
+                new_state,
+                timestamp,
+                attempt_count,
+                run_id,
+                next_retry_at,
+                error,
+            ),
         )
         conn.commit()
     except sqlite3.Error as e:
