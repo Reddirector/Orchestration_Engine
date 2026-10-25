@@ -72,6 +72,9 @@ def _load_workflow_file(path: str) -> Workflow:
     if not os.path.exists(path):
         raise FileNotFoundError(f"Workflow file not found: '{path}'")
 
+    if os.path.getsize(path) > 10 * 1024 * 1024:
+        raise WorkflowDefinitionError(f"Workflow file '{path}' exceeds maximum size of 10 MB")
+
     ext = os.path.splitext(path)[1].lower()
     if ext in (".yaml", ".yml"):
         try:

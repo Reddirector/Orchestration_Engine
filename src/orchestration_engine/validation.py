@@ -1,5 +1,8 @@
 from orchestration_engine.models import Workflow
 
+MAX_TASKS_PER_WORKFLOW = 5000
+MAX_DEPENDENCIES_PER_TASK = 500
+
 
 def has_cycle(
     task_id: str,
@@ -41,6 +44,11 @@ def get_workflow_validation_error(workflow: Workflow) -> str | None:
                 f"got {workflow.default_timeout_seconds!r}"
             )
 
+    if len(workflow.tasks) > MAX_TASKS_PER_WORKFLOW:
+        return (
+            f"workflow task count ({len(workflow.tasks)}) exceeds limit of {MAX_TASKS_PER_WORKFLOW}"
+        )
+
     seen_ids: set[str] = set()
     for task in workflow.tasks:
         if task.task_id in seen_ids:
@@ -51,6 +59,11 @@ def get_workflow_validation_error(workflow: Workflow) -> str | None:
     dependencies = {task.task_id: task.dependencies for task in workflow.tasks}
 
     for task in workflow.tasks:
+        if len(task.dependencies) > MAX_DEPENDENCIES_PER_TASK:
+            return (
+                f"task {task.task_id}: dependencies count ({len(task.dependencies)}) "
+                f"exceeds limit of {MAX_DEPENDENCIES_PER_TASK}"
+            )
         policy = task.retry_policy
         if (
             isinstance(policy.max_attempts, bool)

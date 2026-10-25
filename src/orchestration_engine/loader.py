@@ -17,6 +17,8 @@ from orchestration_engine.models import (
 from orchestration_engine.runner import run_workflow
 from orchestration_engine.status import get_workflow_status
 
+MAX_WORKFLOW_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
 
 def load_workflow_from_json(
     json_data: dict[str, Any],
@@ -254,6 +256,11 @@ def run_workflow_from_file(
     then returning get_workflow_status(...) on the resulting Workflow. See
     run_workflow for task_runner's contract and retry/timeout behavior.
     """
+    if os.path.exists(path) and os.path.getsize(path) > MAX_WORKFLOW_FILE_SIZE:
+        raise WorkflowDefinitionError(
+            f"Workflow file '{path}' exceeds maximum allowed size of {MAX_WORKFLOW_FILE_SIZE} bytes"
+        )
+
     with open(path) as f:
         json_data = json.load(f)
 
@@ -296,6 +303,10 @@ def load_workflow_from_yaml(
     data: Any
     if isinstance(source, (str, os.PathLike)):
         try:
+            if os.path.exists(source) and os.path.getsize(source) > MAX_WORKFLOW_FILE_SIZE:
+                raise WorkflowDefinitionError(
+                    f"Workflow file '{source}' exceeds maximum allowed size of {MAX_WORKFLOW_FILE_SIZE} bytes"
+                )
             with open(source) as f:
                 data = yaml.safe_load(f)
         except (OSError, FileNotFoundError):
