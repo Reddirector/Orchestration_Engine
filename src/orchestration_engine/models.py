@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
@@ -100,3 +101,15 @@ class WorkflowStatus(StrEnum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+
+
+@dataclass
+class Hooks:
+    """
+    Lifecycle callbacks invoked after corresponding persistence steps.
+    """
+    on_task_start: Callable[[Task], None] | None = None
+    on_task_succeeded: Callable[[Task], None] | None = None
+    on_task_failed: Callable[[Task], None] | None = None
+    on_task_retry: Callable[[Task], None] | None = None
+    on_workflow_done: Callable[[Workflow, WorkflowStatus], None] | None = None

@@ -17,6 +17,7 @@ from orchestration_engine.errors import (
 )
 from orchestration_engine.executor import complete_task, execute_task, fail_task
 from orchestration_engine.models import (
+    Hooks,
     Task,
     TaskResult,
     TaskState,
@@ -81,6 +82,15 @@ def _serialize_workflow(workflow: Workflow) -> str:
     return json.dumps(data)
 
 
+def _safe_call_hook(hook: Any, *args: Any) -> None:
+    if hook is None:
+        return
+    try:
+        hook(*args)
+    except Exception:
+        pass
+
+
 def _handle_task_success(
     task: Task,
     output: Any,
@@ -89,6 +99,7 @@ def _handle_task_success(
     finish_time: float,
     task_states: dict[str, TaskState],
     run_outputs: dict[str, Any],
+    hooks: Hooks | None = None,
 ) -> None:
     output_json: str | None = None
     if output is not None:
@@ -98,11 +109,18 @@ def _handle_task_success(
             task.last_error = f"Task output is not JSON-serializable: {exc}"[:2000]
             save_task_output(conn, run_id, task.task_id, None, task.last_error)
             fail_task(task, finish_time, conn, task_states)
+            if hooks:
+                if task.state == TaskState.RETRY_WAIT:
+                    _safe_call_hook(hooks.on_task_retry, task)
+                elif task.state == TaskState.FAILED:
+                    _safe_call_hook(hooks.on_task_failed, task)
             return
 
     save_task_output(conn, run_id, task.task_id, output_json, None)
     run_outputs[task.task_id] = output
     complete_task(task, conn, finish_time, task_states)
+    if hooks:
+        _safe_call_hook(hooks.on_task_succeeded, task)
 
 
 def _handle_task_failure(
@@ -112,11 +130,17 @@ def _handle_task_failure(
     conn: sqlite3.Connection,
     finish_time: float,
     task_states: dict[str, TaskState],
+    hooks: Hooks | None = None,
 ) -> None:
     if error is not None:
         task.last_error = error[:2000]
     save_task_output(conn, run_id, task.task_id, None, task.last_error)
     fail_task(task, finish_time, conn, task_states)
+    if hooks:
+        if task.state == TaskState.RETRY_WAIT:
+            _safe_call_hook(hooks.on_task_retry, task)
+        elif task.state == TaskState.FAILED:
+            _safe_call_hook(hooks.on_task_failed, task)
 
 
 def run_workflow(
@@ -130,6 +154,7 @@ def run_workflow(
     run_id: str | None = None,
     max_concurrency: int = 1,
     executor: ExecutorType = "thread",
+    hooks: Hooks | None = None,
 ) -> str:
     """
     Run a Workflow to completion, executing tasks as their dependencies clear.
@@ -204,6 +229,7 @@ def run_workflow(
             sleep=sleep,
             run_id=actual_run_id,
             run_outputs=run_outputs,
+            hooks=hooks,
         )
     elif executor == "process":
         _run_coordinator_process(
@@ -216,6 +242,7 @@ def run_workflow(
             max_concurrency=max_concurrency,
             run_id=actual_run_id,
             run_outputs=run_outputs,
+            hooks=hooks,
         )
     else:
         _run_coordinator_thread(
@@ -228,6 +255,7 @@ def run_workflow(
             max_concurrency=max_concurrency,
             run_id=actual_run_id,
             run_outputs=run_outputs,
+            hooks=hooks,
         )
 
     finished_at = time_source()
@@ -240,6 +268,11 @@ def run_workflow(
         conn.commit()
     except sqlite3.Error as e:
         raise PersistenceError(f"Failed to record run completion: {e}") from e
+
+    if hooks:
+        _safe_call_hook(
+            hooks.on_workflow_done, workflow, WorkflowStatus(final_status)
+        )
 
     mirror_task_states(workflow.tasks, task_states)
     return actual_run_id
@@ -254,6 +287,7 @@ def _run_coordinator_inline(
     sleep: Callable[[float], None],
     run_id: str,
     run_outputs: dict[str, Any],
+    hooks: Hooks | None = None,
 ) -> None:
     while True:
         current_time = time_source()
@@ -278,6 +312,8 @@ def _run_coordinator_inline(
                 if dep in run_outputs
             }
             execute_task(task, conn, current_time)
+            if hooks:
+                _safe_call_hook(hooks.on_task_start, task)
             try:
                 ret = task_runner(task)
             except Exception as exc:
@@ -289,6 +325,7 @@ def _run_coordinator_inline(
                     conn,
                     finish_time,
                     task_states,
+                    hooks=hooks,
                 )
                 continue
 
@@ -303,6 +340,7 @@ def _run_coordinator_inline(
                         finish_time,
                         task_states,
                         run_outputs,
+                        hooks=hooks,
                     )
                 else:
                     _handle_task_failure(
@@ -312,6 +350,7 @@ def _run_coordinator_inline(
                         conn,
                         finish_time,
                         task_states,
+                        hooks=hooks,
                     )
             else:
                 if ret:
@@ -323,6 +362,7 @@ def _run_coordinator_inline(
                         finish_time,
                         task_states,
                         run_outputs,
+                        hooks=hooks,
                     )
                 else:
                     _handle_task_failure(
@@ -332,6 +372,7 @@ def _run_coordinator_inline(
                         conn,
                         finish_time,
                         task_states,
+                        hooks=hooks,
                     )
 
 
@@ -345,6 +386,7 @@ def _run_coordinator_thread(
     max_concurrency: int,
     run_id: str,
     run_outputs: dict[str, Any],
+    hooks: Hooks | None = None,
 ) -> None:
     pool = ThreadPoolExecutor(max_workers=max_concurrency)
     in_flight: dict[Future[Any], tuple[Task, float, float | None]] = {}
@@ -370,6 +412,8 @@ def _run_coordinator_thread(
                     if dep in run_outputs
                 }
                 execute_task(task, conn, current_time)
+                if hooks:
+                    _safe_call_hook(hooks.on_task_start, task)
                 mono_start = time.monotonic()
                 mono_deadline = (
                     mono_start + task.timeout_seconds
@@ -428,6 +472,7 @@ def _run_coordinator_thread(
                             conn,
                             finish_time,
                             task_states,
+                            hooks=hooks,
                         )
                     else:
                         ret = fut.result()
@@ -441,6 +486,7 @@ def _run_coordinator_thread(
                                     finish_time,
                                     task_states,
                                     run_outputs,
+                                    hooks=hooks,
                                 )
                             else:
                                 _handle_task_failure(
@@ -450,6 +496,7 @@ def _run_coordinator_thread(
                                     conn,
                                     finish_time,
                                     task_states,
+                                    hooks=hooks,
                                 )
                         else:
                             if ret:
@@ -461,6 +508,7 @@ def _run_coordinator_thread(
                                     finish_time,
                                     task_states,
                                     run_outputs,
+                                    hooks=hooks,
                                 )
                             else:
                                 _handle_task_failure(
@@ -470,6 +518,7 @@ def _run_coordinator_thread(
                                     conn,
                                     finish_time,
                                     task_states,
+                                    hooks=hooks,
                                 )
                 except Exception as exc:
                     _handle_task_failure(
@@ -479,6 +528,7 @@ def _run_coordinator_thread(
                         conn,
                         finish_time,
                         task_states,
+                        hooks=hooks,
                     )
 
             # Check timeouts on remaining in-flight tasks
@@ -494,6 +544,7 @@ def _run_coordinator_thread(
                         conn,
                         fail_time,
                         task_states,
+                        hooks=hooks,
                     )
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
@@ -509,6 +560,7 @@ def _run_coordinator_process(
     max_concurrency: int,
     run_id: str,
     run_outputs: dict[str, Any],
+    hooks: Hooks | None = None,
 ) -> None:
     ctx = multiprocessing.get_context("spawn")
     # map task_id -> (task, proc, pipe, mono_start, mono_deadline)
@@ -536,6 +588,8 @@ def _run_coordinator_process(
                     if dep in run_outputs
                 }
                 execute_task(task, conn, current_time)
+                if hooks:
+                    _safe_call_hook(hooks.on_task_start, task)
                 parent_conn, child_conn = ctx.Pipe()
                 proc = ctx.Process(
                     target=_process_task_target,
@@ -631,6 +685,7 @@ def _run_coordinator_process(
                         finish_time,
                         task_states,
                         run_outputs,
+                        hooks=hooks,
                     )
                 else:
                     _handle_task_failure(
@@ -640,6 +695,7 @@ def _run_coordinator_process(
                         conn,
                         finish_time,
                         task_states,
+                        hooks=hooks,
                     )
 
             # Check timeouts for remaining child processes
@@ -665,6 +721,7 @@ def _run_coordinator_process(
                         conn,
                         fail_time,
                         task_states,
+                        hooks=hooks,
                     )
     finally:
         for _tid, (_task, proc, pipe, _, _) in in_flight.items():
@@ -689,6 +746,7 @@ def resume_run(
     sleep: Callable[[float], None] = time.sleep,
     max_concurrency: int = 1,
     executor: ExecutorType = "thread",
+    hooks: Hooks | None = None,
 ) -> WorkflowStatus:
     """
     Resume an interrupted or pending workflow run.
@@ -758,6 +816,7 @@ def resume_run(
         run_id=run_id,
         max_concurrency=max_concurrency,
         executor=executor,
+        hooks=hooks,
     )
 
     return get_workflow_status(workflow)

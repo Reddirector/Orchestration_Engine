@@ -4,7 +4,15 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from orchestration_engine.errors import WorkflowDefinitionError
-from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
+from orchestration_engine.models import (
+    Hooks,
+    RetryPolicy,
+    Task,
+    TaskResult,
+    TaskState,
+    Workflow,
+    WorkflowStatus,
+)
 from orchestration_engine.runner import run_workflow
 from orchestration_engine.status import get_workflow_status
 
@@ -117,13 +125,14 @@ ExecutorType = Literal["thread", "process", "_inline"]
 
 def run_workflow_from_file(
     path: str,
-    task_runner: Callable[[Task], bool],
+    task_runner: Callable[[Task], bool | TaskResult],
     time_source: Callable[[], float],
     conn: sqlite3.Connection,
     *,
     run_id: str | None = None,
     max_concurrency: int = 1,
     executor: ExecutorType = "thread",
+    hooks: Hooks | None = None,
 ) -> WorkflowStatus:
     """
     Load a workflow definition from a JSON file and run it to completion.
@@ -146,6 +155,7 @@ def run_workflow_from_file(
         run_id=run_id,
         max_concurrency=max_concurrency,
         executor=executor,
+        hooks=hooks,
     )
 
     return get_workflow_status(workflow)

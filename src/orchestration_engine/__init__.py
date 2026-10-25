@@ -7,7 +7,7 @@ from .errors import (
     WorkflowValidationError,
 )
 from .loader import load_workflow_from_json, run_workflow_from_file
-from .models import RetryPolicy, Task, TaskResult, TaskState, Workflow, WorkflowStatus
+from .models import Hooks, RetryPolicy, Task, TaskResult, TaskState, Workflow, WorkflowStatus
 from .persistence import get_connection, get_run_history, get_workflow_history, list_runs
 from .runner import resume_run, run_workflow
 from .status import get_run_status, get_workflow_status
@@ -25,6 +25,7 @@ __all__ = [
     "RetryPolicy",
     "TaskState",
     "WorkflowStatus",
+    "Hooks",
     "run_workflow",
     "run_workflow_from_file",
     "resume_run",

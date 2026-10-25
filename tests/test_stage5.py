@@ -159,3 +159,73 @@ def test_data_flow_survives_resume(conn: sqlite3.Connection) -> None:
     status = resume_run(conn, run_id, resume_runner, time.time)
     assert status == WorkflowStatus.SUCCEEDED
     assert b_received_inputs == {"tA": {"msg": "hello from A"}}
+
+
+def test_hooks_lifecycle_called_in_order(conn: sqlite3.Connection) -> None:
+    from orchestration_engine.models import Hooks
+
+    events: list[str] = []
+
+    hooks = Hooks(
+        on_task_start=lambda t: events.append(f"start:{t.task_id}"),
+        on_task_succeeded=lambda t: events.append(f"succeeded:{t.task_id}"),
+        on_task_failed=lambda t: events.append(f"failed:{t.task_id}"),
+        on_task_retry=lambda t: events.append(f"retry:{t.task_id}"),
+        on_workflow_done=lambda _wf, st: events.append(f"done:{st.value}"),
+    )
+
+    t = Task("t1", "wf", "T1", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    wf = Workflow("wf", "wf", "desc", [t])
+
+    run_workflow(wf, {}, time.time, lambda _t: True, conn, hooks=hooks)
+    assert events == ["start:t1", "succeeded:t1", "done:succeeded"]
+
+
+def test_raising_hook_does_not_break_run(conn: sqlite3.Connection) -> None:
+    from orchestration_engine.models import Hooks
+
+    def broken_hook(_t: Task) -> None:
+        raise RuntimeError("boom in hook")
+
+    hooks = Hooks(
+        on_task_start=broken_hook,
+        on_task_succeeded=broken_hook,
+        on_task_failed=broken_hook,
+        on_task_retry=broken_hook,
+        on_workflow_done=lambda _wf, _st: (_ for _ in ()).throw(RuntimeError("boom done")),
+    )
+
+    t = Task("t1", "wf", "T1", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    wf = Workflow("wf", "wf", "desc", [t])
+
+    # Must complete successfully despite all hooks raising
+    run_workflow(wf, {}, time.time, lambda _t: True, conn, hooks=hooks)
+    assert t.state == TaskState.SUCCEEDED
+
+
+def test_hooks_retry_and_failed(conn: sqlite3.Connection) -> None:
+    from orchestration_engine.models import Hooks
+
+    events: list[str] = []
+
+    hooks = Hooks(
+        on_task_start=lambda t: events.append(f"start:{t.attempt_count}"),
+        on_task_retry=lambda t: events.append(f"retry:{t.attempt_count}"),
+        on_task_failed=lambda t: events.append(f"failed:{t.attempt_count}"),
+        on_workflow_done=lambda _wf, st: events.append(f"done:{st.value}"),
+    )
+
+    t = Task("t1", "wf", "T1", "d", [], TaskState.PENDING, RetryPolicy(2, 0.01))
+    wf = Workflow("wf", "wf", "desc", [t])
+
+    # Always fails
+    run_workflow(wf, {}, time.time, lambda _t: False, conn, hooks=hooks)
+    assert t.state == TaskState.FAILED
+    assert events == [
+        "start:1",
+        "retry:1",
+        "start:2",
+        "failed:2",
+        "done:failed",
+    ]
+
