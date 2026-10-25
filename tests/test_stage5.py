@@ -229,3 +229,96 @@ def test_hooks_retry_and_failed(conn: sqlite3.Connection) -> None:
         "done:failed",
     ]
 
+
+def test_workflow_builder_fluent() -> None:
+    from orchestration_engine.builder import WorkflowBuilder
+
+    wf = (
+        WorkflowBuilder("my-wf", "My Workflow")
+        .description("Detailed description")
+        .default_timeout(45.0)
+        .task("t1", "Task 1", "first task", timeout_seconds=15.0)
+        .task(
+            "t2",
+            "Task 2",
+            "second task",
+            dependencies=["t1"],
+            max_attempts=3,
+            delay_seconds=2.5,
+        )
+        .build()
+    )
+
+    assert wf.workflow_id == "my-wf"
+    assert wf.name == "My Workflow"
+    assert wf.description == "Detailed description"
+    assert wf.default_timeout_seconds == 45.0
+    assert len(wf.tasks) == 2
+
+    t1, t2 = wf.tasks
+    assert t1.task_id == "t1"
+    assert t1.timeout_seconds == 15.0
+    assert t2.task_id == "t2"
+    assert t2.dependencies == ["t1"]
+    assert t2.retry_policy.max_attempts == 3
+    assert t2.retry_policy.delay_seconds == 2.5
+    assert t2.timeout_seconds == 45.0  # Inherited workflow default
+
+
+def test_workflow_builder_validates_on_build() -> None:
+    from orchestration_engine.builder import WorkflowBuilder
+    from orchestration_engine.errors import WorkflowValidationError
+
+    # Dependency cycle
+    builder = (
+        WorkflowBuilder("cycle-wf")
+        .task("t1", "T1", dependencies=["t2"])
+        .task("t2", "T2", dependencies=["t1"])
+    )
+
+    with pytest.raises(WorkflowValidationError, match="cycle"):
+        builder.build()
+
+
+def test_workflow_to_dict_round_trip() -> None:
+    from orchestration_engine.builder import WorkflowBuilder, workflow_to_dict
+    from orchestration_engine.loader import load_workflow_from_json
+
+    original_wf = (
+        WorkflowBuilder("round-trip-wf", "Round Trip", "Testing round trip")
+        .default_timeout(60.0)
+        .task("extract", "Extract Data", "Fetch data", timeout_seconds=10.0)
+        .task(
+            "transform",
+            "Transform Data",
+            "Clean data",
+            dependencies=["extract"],
+            max_attempts=2,
+            delay_seconds=5.0,
+            timeout_seconds=20.0,
+        )
+        .task("load", "Load Data", "Store data", dependencies=["transform"])
+        .build()
+    )
+
+    wf_dict = workflow_to_dict(original_wf)
+    round_trip_wf = load_workflow_from_json(wf_dict)
+
+    assert round_trip_wf.workflow_id == original_wf.workflow_id
+    assert round_trip_wf.name == original_wf.name
+    assert round_trip_wf.description == original_wf.description
+    assert round_trip_wf.default_timeout_seconds == original_wf.default_timeout_seconds
+    assert len(round_trip_wf.tasks) == len(original_wf.tasks)
+
+    for orig_t, rt_t in zip(original_wf.tasks, round_trip_wf.tasks, strict=True):
+        assert rt_t.task_id == orig_t.task_id
+        assert rt_t.workflow_id == orig_t.workflow_id
+        assert rt_t.name == orig_t.name
+        assert rt_t.description == orig_t.description
+        assert rt_t.dependencies == orig_t.dependencies
+        assert rt_t.state == orig_t.state
+        assert rt_t.retry_policy.max_attempts == orig_t.retry_policy.max_attempts
+        assert rt_t.retry_policy.delay_seconds == orig_t.retry_policy.delay_seconds
+        assert rt_t.timeout_seconds == orig_t.timeout_seconds
+
+

@@ -1,5 +1,6 @@
 import importlib.metadata
 
+from .builder import WorkflowBuilder, workflow_to_dict
 from .errors import (
     OrchestrationError,
     PersistenceError,
@@ -26,6 +27,8 @@ __all__ = [
     "TaskState",
     "WorkflowStatus",
     "Hooks",
+    "WorkflowBuilder",
+    "workflow_to_dict",
     "run_workflow",
     "run_workflow_from_file",
     "resume_run",
