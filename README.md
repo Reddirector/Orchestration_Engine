@@ -244,4 +244,4 @@ See the complete [Use Cases Documentation](docs/use-cases.md) for architectural 
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Dual-licensed under either MIT or Apache 2.0 at your option — see [LICENSE-MIT](LICENSE-MIT) and [LICENSE](LICENSE).

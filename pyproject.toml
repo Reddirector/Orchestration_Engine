@@ -8,8 +8,8 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = []
-license = "Apache-2.0"
-license-files = ["LICENSE", "CHANGELOG.md"]
+license = "MIT OR Apache-2.0"
+license-files = ["LICENSE", "LICENSE-MIT", "CHANGELOG.md"]
 keywords = [
     "workflow",
     "orchestration",
