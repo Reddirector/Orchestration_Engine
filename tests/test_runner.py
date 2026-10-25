@@ -1,7 +1,8 @@
 import pytest
 
-from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow
+from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
 from orchestration_engine.runner import run_workflow
+from orchestration_engine.status import get_workflow_status
 
 
 def test_run_workflow_raises_on_invalid_workflow(conn) -> None:
@@ -200,3 +201,135 @@ def test_run_workflow_retries_on_timeout(conn) -> None:
     )
 
     assert task.state == TaskState.SUCCEEDED
+
+
+def test_transitive_cancellation_end_to_end(conn) -> None:
+    retry_policy = RetryPolicy(max_attempts=1, delay_seconds=1)
+    task_a = Task(
+        task_id="A",
+        workflow_id="wf-e2e-cancel",
+        name="Task A",
+        description="Always fails",
+        dependencies=[],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    task_b = Task(
+        task_id="B",
+        workflow_id="wf-e2e-cancel",
+        name="Task B",
+        description="Depends on A",
+        dependencies=["A"],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    task_c = Task(
+        task_id="C",
+        workflow_id="wf-e2e-cancel",
+        name="Task C",
+        description="Depends on B",
+        dependencies=["B"],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    task_d = Task(
+        task_id="D",
+        workflow_id="wf-e2e-cancel",
+        name="Task D",
+        description="Independent",
+        dependencies=[],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    workflow = Workflow(
+        workflow_id="wf-e2e-cancel",
+        name="End-to-End Transitive Cancellation",
+        description="Tests transitive cancellation end-to-end",
+        tasks=[task_a, task_b, task_c, task_d],
+    )
+    task_states: dict[str, TaskState] = {}
+
+    def runner(task: Task) -> bool:
+        if task.task_id == "A":
+            return False
+        return True
+
+    run_workflow(
+        workflow,
+        task_states,
+        time_source=lambda: 0.0,
+        task_runner=runner,
+        conn=conn,
+    )
+
+    assert task_a.state == TaskState.FAILED
+    assert task_b.state == TaskState.CANCELLED
+    assert task_c.state == TaskState.CANCELLED
+    assert task_d.state == TaskState.SUCCEEDED
+    assert get_workflow_status(workflow) == WorkflowStatus.FAILED
+
+
+def test_transitive_cancellation_diamond_case(conn) -> None:
+    retry_policy = RetryPolicy(max_attempts=1, delay_seconds=1)
+    task_a = Task(
+        task_id="A",
+        workflow_id="wf-diamond-cancel",
+        name="Task A",
+        description="Always fails",
+        dependencies=[],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    task_b = Task(
+        task_id="B",
+        workflow_id="wf-diamond-cancel",
+        name="Task B",
+        description="Depends on A",
+        dependencies=["A"],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    task_d = Task(
+        task_id="D",
+        workflow_id="wf-diamond-cancel",
+        name="Task D",
+        description="Independent",
+        dependencies=[],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    task_e = Task(
+        task_id="E",
+        workflow_id="wf-diamond-cancel",
+        name="Task E",
+        description="Depends on B (cancelled) and D (succeeded)",
+        dependencies=["B", "D"],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    workflow = Workflow(
+        workflow_id="wf-diamond-cancel",
+        name="Diamond Cancellation",
+        description="Tests diamond dependency cancellation",
+        tasks=[task_a, task_b, task_d, task_e],
+    )
+    task_states: dict[str, TaskState] = {}
+
+    def runner(task: Task) -> bool:
+        if task.task_id == "A":
+            return False
+        return True
+
+    run_workflow(
+        workflow,
+        task_states,
+        time_source=lambda: 0.0,
+        task_runner=runner,
+        conn=conn,
+    )
+
+    assert task_a.state == TaskState.FAILED
+    assert task_b.state == TaskState.CANCELLED
+    assert task_d.state == TaskState.SUCCEEDED
+    assert task_e.state == TaskState.CANCELLED
+    assert get_workflow_status(workflow) == WorkflowStatus.FAILED

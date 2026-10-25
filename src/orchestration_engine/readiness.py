@@ -54,7 +54,7 @@ def get_blocked_tasks(
     for task in workflow.tasks:
         if task.state == TaskState.PENDING:
             for dependency in task.dependencies:
-                if task_states.get(dependency) == TaskState.FAILED:
+                if task_states.get(dependency) in (TaskState.FAILED, TaskState.CANCELLED):
                     blocked_tasks.append(task)
                     break
 
@@ -67,9 +67,18 @@ def cancel_blocked_tasks(
     conn: sqlite3.Connection,
     timestamp: float,
 ) -> list[Task]:
-    blocked_tasks = get_blocked_tasks(workflow, task_states)
-    for task in blocked_tasks:
-        if transition_task(task, TaskState.CANCELLED, conn, timestamp):
-            task_states[task.task_id] = TaskState.CANCELLED
+    all_cancelled: list[Task] = []
+    while True:
+        blocked_tasks = get_blocked_tasks(workflow, task_states)
+        if not blocked_tasks:
+            break
+        cancelled_in_pass = 0
+        for task in blocked_tasks:
+            if transition_task(task, TaskState.CANCELLED, conn, timestamp):
+                task_states[task.task_id] = TaskState.CANCELLED
+                all_cancelled.append(task)
+                cancelled_in_pass += 1
+        if cancelled_in_pass == 0:
+            break
 
-    return blocked_tasks
+    return all_cancelled

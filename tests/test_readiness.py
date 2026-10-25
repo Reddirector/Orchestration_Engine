@@ -281,3 +281,67 @@ def test_dependent_task_cancelled_when_dependency_failed(conn) -> None:
     cancel_blocked_tasks(workflow, task_states, conn, 0.0)
 
     assert task_b.state == TaskState.CANCELLED
+
+
+def test_transitive_cancellation_unit(conn) -> None:
+    from orchestration_engine.scheduler import schedule_once
+
+    retry_policy = RetryPolicy(max_attempts=1, delay_seconds=1)
+    task_a = Task(
+        task_id="A",
+        workflow_id="wf-transitive",
+        name="Task A",
+        description="Fails",
+        dependencies=[],
+        retry_policy=retry_policy,
+        state=TaskState.FAILED,
+    )
+    task_b = Task(
+        task_id="B",
+        workflow_id="wf-transitive",
+        name="Task B",
+        description="Depends on A",
+        dependencies=["A"],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    task_c = Task(
+        task_id="C",
+        workflow_id="wf-transitive",
+        name="Task C",
+        description="Depends on B",
+        dependencies=["B"],
+        retry_policy=retry_policy,
+        state=TaskState.PENDING,
+    )
+    workflow = Workflow(
+        workflow_id="wf-transitive",
+        name="Transitive Cancellation Workflow",
+        description="Tests transitive cancellation",
+        tasks=[task_a, task_b, task_c],
+    )
+    task_states: dict[str, TaskState] = {
+        "A": TaskState.FAILED,
+        "B": TaskState.PENDING,
+        "C": TaskState.PENDING,
+    }
+
+    cancel_blocked_tasks(workflow, task_states, conn, 0.0)
+
+    assert task_b.state == TaskState.CANCELLED
+    assert task_states["B"] == TaskState.CANCELLED
+    assert task_c.state == TaskState.CANCELLED
+    assert task_states["C"] == TaskState.CANCELLED
+
+    # Also test via schedule_once
+    task_b.state = TaskState.PENDING
+    task_c.state = TaskState.PENDING
+    task_states["B"] = TaskState.PENDING
+    task_states["C"] = TaskState.PENDING
+
+    schedule_once(workflow, task_states, 0.0, conn)
+
+    assert task_b.state == TaskState.CANCELLED
+    assert task_states["B"] == TaskState.CANCELLED
+    assert task_c.state == TaskState.CANCELLED
+    assert task_states["C"] == TaskState.CANCELLED
