@@ -18,45 +18,39 @@ def complete_task(
     task: Task,
     conn: sqlite3.Connection,
     timestamp: float,
-    task_states: dict[str, TaskState],
+    task_states: dict[str, TaskState] | None = None,
 ) -> bool:
     if task.state != TaskState.RUNNING:
         return False
 
-    success = transition_task(task, TaskState.SUCCEEDED, conn, timestamp)
-    if success:
-        task_states[task.task_id] = TaskState.SUCCEEDED
-    return success
+    return transition_task(task, TaskState.SUCCEEDED, conn, timestamp, task_states=task_states)
 
 
 def fail_task(
     task: Task,
     current_time: float,
     conn: sqlite3.Connection,
-    task_states: dict[str, TaskState],
+    task_states: dict[str, TaskState] | None = None,
 ) -> bool:
     if task.state != TaskState.RUNNING:
         return False
 
     if task.attempt_count < task.retry_policy.max_attempts:
         task.next_retry_at = current_time + calculate_retry_delay(task)
-        retried = transition_task(
-            task, TaskState.RETRY_WAIT, conn, current_time)
-        if retried:
-            task_states[task.task_id] = TaskState.RETRY_WAIT
-        return retried
+        return transition_task(
+            task, TaskState.RETRY_WAIT, conn, current_time, task_states=task_states
+        )
 
-    failed = transition_task(task, TaskState.FAILED, conn, current_time)
-    if failed:
-        task_states[task.task_id] = TaskState.FAILED
-    return failed
+    return transition_task(
+        task, TaskState.FAILED, conn, current_time, task_states=task_states
+    )
 
 
 def retry_task(
     task: Task,
     current_time: float,
     conn: sqlite3.Connection,
-    task_states: dict[str, TaskState],
+    task_states: dict[str, TaskState] | None = None,
 ) -> bool:
     if task.state != TaskState.RETRY_WAIT:
         return False
@@ -67,10 +61,7 @@ def retry_task(
     if current_time < task.next_retry_at:
         return False
 
-    ready = transition_task(task, TaskState.READY, conn, current_time)
-    if ready:
-        task_states[task.task_id] = TaskState.READY
-    return ready
+    return transition_task(task, TaskState.READY, conn, current_time, task_states=task_states)
 
 
 def calculate_retry_delay(task: Task) -> float:

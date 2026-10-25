@@ -12,6 +12,7 @@ from orchestration_engine.models import Task, TaskState, Workflow
 from orchestration_engine.persistence import _migrate_database
 from orchestration_engine.scheduler import schedule_once
 from orchestration_engine.status import get_workflow_status
+from orchestration_engine.transitions import mirror_task_states
 from orchestration_engine.validation import get_workflow_validation_error
 
 
@@ -76,6 +77,7 @@ def run_workflow(
     actual_run_id = run_id if run_id is not None else uuid.uuid4().hex
     for task in workflow.tasks:
         task._run_id = actual_run_id
+    mirror_task_states(workflow.tasks, task_states)
 
     _migrate_database(conn)
     started_at = time_source()
@@ -146,4 +148,5 @@ def run_workflow(
     except sqlite3.Error as e:
         raise PersistenceError(f"Failed to record run completion: {e}") from e
 
+    mirror_task_states(workflow.tasks, task_states)
     return actual_run_id

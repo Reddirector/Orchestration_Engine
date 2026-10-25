@@ -193,3 +193,75 @@ def test_status_from_database(conn: sqlite3.Connection) -> None:
 
     runs_wf2 = list_runs(conn, workflow_id="nonexistent-wf")
     assert len(runs_wf2) == 0
+
+
+def test_g6_single_source_of_truth_mirror(conn: sqlite3.Connection) -> None:
+    from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow
+    from orchestration_engine.runner import run_workflow
+
+    current_time = 100.0
+
+    def adv_time() -> float:
+        return current_time
+
+    def fake_sleep(s: float) -> None:
+        nonlocal current_time
+        current_time += s
+
+    t1 = Task("t1", "wf", "Success", "d", [], TaskState.PENDING, RetryPolicy(1, 1.0))
+    t2 = Task("t2", "wf", "RetrySuccess", "d", [], TaskState.PENDING, RetryPolicy(3, 1.0))
+    t3 = Task("t3", "wf", "ExceptionFail", "d", [], TaskState.PENDING, RetryPolicy(2, 1.0))
+    t4 = Task("t4", "wf", "Dependent", "d", ["t3"], TaskState.PENDING, RetryPolicy(1, 1.0))
+    t5 = Task("t5", "wf", "Transitive", "d", ["t4"], TaskState.PENDING, RetryPolicy(1, 1.0))
+    t6 = Task(
+        "t6",
+        "wf",
+        "TimeoutTask",
+        "d",
+        [],
+        TaskState.PENDING,
+        RetryPolicy(1, 1.0),
+        timeout_seconds=0.1,
+    )
+
+    wf = Workflow("wf", "Workflow", "desc", [t1, t2, t3, t4, t5, t6])
+    task_states: dict[str, TaskState] = {}
+
+    attempts: dict[str, int] = {}
+
+    def runner(task: Task) -> bool:
+        nonlocal current_time
+        attempts[task.task_id] = attempts.get(task.task_id, 0) + 1
+        if task.task_id == "t1":
+            return True
+        elif task.task_id == "t2":
+            return attempts[task.task_id] >= 2
+        elif task.task_id == "t3":
+            raise RuntimeError("Task 3 exploded")
+        elif task.task_id == "t6":
+            import time
+            time.sleep(0.3)
+            return True
+        return True
+
+    run_workflow(
+        wf,
+        task_states,
+        time_source=adv_time,
+        task_runner=runner,
+        conn=conn,
+        sleep=fake_sleep,
+    )
+
+    # Verify varied outcomes
+    assert t1.state == TaskState.SUCCEEDED
+    assert t2.state == TaskState.SUCCEEDED
+    assert t3.state == TaskState.FAILED
+    assert t4.state == TaskState.CANCELLED
+    assert t5.state == TaskState.CANCELLED
+    assert t6.state == TaskState.FAILED
+
+    # Verify mirror is strictly identical for every task
+    assert len(task_states) == len(wf.tasks)
+    for task in wf.tasks:
+        assert task_states[task.task_id] == task.state

@@ -36,6 +36,7 @@ def transition_task(
     conn: sqlite3.Connection,
     timestamp: float,
     context: RunContext | None = None,
+    task_states: dict[str, TaskState] | None = None,
 ) -> bool:
     if not can_transition(task.state, new_state):
         return False
@@ -61,4 +62,16 @@ def transition_task(
         raise PersistenceError(f"Database error during transition: {e}") from e
 
     task.state = new_state
+    if task_states is not None:
+        task_states[task.task_id] = new_state
     return True
+
+
+def mirror_task_states(
+    workflow_or_tasks: list[Task],
+    task_states: dict[str, TaskState] | None,
+) -> None:
+    """Internal helper to synchronize task_states mirror dictionary."""
+    if task_states is not None:
+        for task in workflow_or_tasks:
+            task_states[task.task_id] = task.state
