@@ -1,6 +1,6 @@
 [project]
 name = "orchestration-engine"
-version = "0.5.0"
+version = "0.6.0"
 description = "A fault-tolerant workflow orchestration engine"
 readme = "README.md"
 authors = [
@@ -13,6 +13,9 @@ license-files = ["LICENSE"]
 
 [project.optional-dependencies]
 yaml = ["pyyaml>=6.0"]
+
+[project.scripts]
+orchestration-engine = "orchestration_engine.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.11.32,<0.12.0"]
