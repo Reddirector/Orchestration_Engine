@@ -188,3 +188,33 @@ def get_run_history(
         (run_id,),
     )
     return cursor.fetchall()
+
+
+def list_runs(
+    conn: sqlite3.Connection,
+    workflow_id: str | None = None,
+) -> list[tuple[Any, ...]]:
+    """
+    List run summaries from the database, ordered newest first.
+    Each tuple is (run_id, workflow_id, started_at, finished_at, status).
+    """
+    _migrate_database(conn)
+    if workflow_id is not None:
+        cursor = conn.execute(
+            """
+            SELECT run_id, workflow_id, started_at, finished_at, status
+            FROM runs
+            WHERE workflow_id = ?
+            ORDER BY started_at DESC, run_id DESC
+            """,
+            (workflow_id,),
+        )
+    else:
+        cursor = conn.execute(
+            """
+            SELECT run_id, workflow_id, started_at, finished_at, status
+            FROM runs
+            ORDER BY started_at DESC, run_id DESC
+            """
+        )
+    return cursor.fetchall()

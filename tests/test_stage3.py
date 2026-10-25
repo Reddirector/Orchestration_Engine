@@ -1,6 +1,8 @@
 import sqlite3
 from pathlib import Path
 
+import pytest
+
 from orchestration_engine.persistence import (
     get_connection,
     get_run_history,
@@ -157,3 +159,37 @@ def test_run_id_plumbing(conn: sqlite3.Connection) -> None:
     hist2 = get_run_history(conn, "custom-run-001")
     assert len(hist1) > 0
     assert len(hist2) > 0
+
+
+def test_status_from_database(conn: sqlite3.Connection) -> None:
+    from orchestration_engine.errors import OrchestrationError
+    from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
+    from orchestration_engine.persistence import list_runs
+    from orchestration_engine.runner import run_workflow
+    from orchestration_engine.status import get_run_status
+
+    task1 = Task("t1", "wf1", "task 1", "desc", [], TaskState.PENDING, RetryPolicy(1, 1))
+    wf = Workflow("wf1", "wf", "desc", [task1])
+    run_id_success = run_workflow(wf, {}, lambda: 100.0, lambda _t: True, conn)
+    assert get_run_status(conn, run_id_success) == WorkflowStatus.SUCCEEDED
+
+    task2 = Task("t2", "wf1", "task 2", "desc", [], TaskState.PENDING, RetryPolicy(1, 1))
+    wf_fail = Workflow("wf1", "wf", "desc", [task2])
+    run_id_fail = run_workflow(wf_fail, {}, lambda: 150.0, lambda _t: False, conn)
+    assert get_run_status(conn, run_id_fail) == WorkflowStatus.FAILED
+
+    with pytest.raises(OrchestrationError, match="not found"):
+        get_run_status(conn, "nonexistent-run")
+
+    # test list_runs
+    runs_all = list_runs(conn)
+    assert len(runs_all) == 2
+    # newest first
+    assert runs_all[0][0] == run_id_fail
+    assert runs_all[1][0] == run_id_success
+
+    runs_wf1 = list_runs(conn, workflow_id="wf1")
+    assert len(runs_wf1) == 2
+
+    runs_wf2 = list_runs(conn, workflow_id="nonexistent-wf")
+    assert len(runs_wf2) == 0

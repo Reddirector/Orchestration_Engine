@@ -8,9 +8,9 @@ from .errors import (
 )
 from .loader import load_workflow_from_json, run_workflow_from_file
 from .models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
-from .persistence import get_connection, get_run_history, get_workflow_history
+from .persistence import get_connection, get_run_history, get_workflow_history, list_runs
 from .runner import run_workflow
-from .status import get_workflow_status
+from .status import get_run_status, get_workflow_status
 
 try:
     __version__ = importlib.metadata.version("orchestration-engine")
@@ -28,8 +28,10 @@ __all__ = [
     "run_workflow_from_file",
     "load_workflow_from_json",
     "get_workflow_status",
+    "get_run_status",
     "get_workflow_history",
     "get_run_history",
+    "list_runs",
     "get_connection",
     "OrchestrationError",
     "WorkflowDefinitionError",
