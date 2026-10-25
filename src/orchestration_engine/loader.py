@@ -1,7 +1,7 @@
 import json
 import sqlite3
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 from orchestration_engine.errors import WorkflowDefinitionError
 from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow, WorkflowStatus
@@ -112,6 +112,9 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
     )
 
 
+ExecutorType = Literal["thread"]
+
+
 def run_workflow_from_file(
     path: str,
     task_runner: Callable[[Task], bool],
@@ -119,6 +122,8 @@ def run_workflow_from_file(
     conn: sqlite3.Connection,
     *,
     run_id: str | None = None,
+    max_concurrency: int = 1,
+    executor: ExecutorType = "thread",
 ) -> WorkflowStatus:
     """
     Load a workflow definition from a JSON file and run it to completion.
@@ -139,6 +144,8 @@ def run_workflow_from_file(
         task_runner,
         conn,
         run_id=run_id,
+        max_concurrency=max_concurrency,
+        executor=executor,
     )
 
     return get_workflow_status(workflow)
