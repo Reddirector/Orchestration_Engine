@@ -125,17 +125,82 @@ run_id = run_workflow(
 - **Thread Backend (`executor="thread"`)**: Lightweight concurrency using `concurrent.futures.ThreadPoolExecutor`. Note that Python threads cannot be preemptively killed; a timed-out task is abandoned by the coordinator and marked failed/retried, while its thread runs to completion in the background.
 - **Process Backend (`executor="process"`)**: True process isolation using `multiprocessing.get_context("spawn")`. On timeout, child processes are terminated with `SIGTERM` and killed with `SIGKILL` after a short grace period. Requires `task_runner` to be picklable.
 
+## Data Flow and Outputs
+
+Tasks can return a `TaskResult(ok=True, output=...)` to pass data to downstream dependents:
+
+```python
+from orchestration_engine import TaskResult
+
+def task_runner(task):
+    if task.task_id == "fetch_user":
+        return TaskResult(ok=True, output={"user_id": 42, "name": "Alice"})
+    elif task.task_id == "greet":
+        # Upstream outputs are automatically injected into task.inputs
+        user = task.inputs["fetch_user"]
+        return TaskResult(ok=True, output=f"Hello, {user['name']}!")
+    return TaskResult(ok=True)
+```
+
+Outputs are persisted in SQLite under Schema v2 and automatically restored upon workflow resumption.
+
+## Lifecycle Hooks
+
+Observe workflow and task state changes safely:
+
+```python
+from orchestration_engine import Hooks
+
+hooks = Hooks(
+    on_task_start=lambda task: print(f"Started: {task.name}"),
+    on_task_succeeded=lambda task: print(f"Succeeded: {task.name}"),
+    on_task_retry=lambda task: print(f"Retrying: {task.name}"),
+    on_task_failed=lambda task: print(f"Failed: {task.name}"),
+    on_workflow_done=lambda wf, status: print(f"Finished: {status.value}"),
+)
+
+run_workflow(workflow, {}, time.time, task_runner, conn, hooks=hooks)
+```
+
+Hooks execute *after* state transitions are persisted to SQLite. Any exception raised inside a hook is caught and suppressed to prevent user hook bugs from interrupting workflow execution.
+
+## Fluent Workflow Builder
+
+Construct and validate workflows with a fluent chaining API:
+
+```python
+from orchestration_engine import WorkflowBuilder, workflow_to_dict
+
+workflow = (
+    WorkflowBuilder("etl-wf", "ETL Pipeline")
+    .description("Extract, transform, and load data")
+    .default_timeout(60.0)
+    .task("extract", name="Extract Records")
+    .task("transform", name="Transform Records", dependencies=["extract"], max_attempts=3)
+    .task("load", name="Load to DB", dependencies=["transform"])
+    .build()
+)
+
+# Losslessly serialize to JSON dictionary:
+wf_dict = workflow_to_dict(workflow)
+```
+
 ## Public API
 
 | Name | Purpose |
 | --- | --- |
 | `Task`, `Workflow` | Core data models |
+| `TaskResult` | Result returned by task runners containing `output` and `error` |
+| `Hooks` | Post-persistence lifecycle event callbacks |
+| `WorkflowBuilder` | Fluent builder for creating and validating workflows |
+| `workflow_to_dict` | Serialize a `Workflow` into a JSON-compatible dict |
 | `RetryPolicy` | Per-task retry configuration (max_attempts, delay_seconds) |
 | `TaskState`, `WorkflowStatus` | State enums (`PENDING`, `READY`, `RUNNING`, `RETRY_WAIT`, `SUCCEEDED`, `FAILED`, `CANCELLED`) |
 | `run_workflow` | Run an already-constructed `Workflow`; returns `run_id` |
 | `run_workflow_from_file` | Load a JSON workflow file and run it end-to-end |
 | `resume_run` | Resume an interrupted workflow run from SQLite |
-| `load_workflow_from_json` | Parse JSON dict into a `Workflow` with validation |
+| `load_workflow_from_json` | Parse JSON dict into a `Workflow` (with optional `collect_errors=True`) |
+| `load_workflow_from_yaml` | Parse YAML workflow definition (requires `orchestration-engine[yaml]`) |
 | `get_workflow_status` | Get a workflow's in-memory overall lifecycle status |
 | `get_run_status` | Get run status derived directly from SQLite events |
 | `get_workflow_history` | Retrieve ordered event log tuples for a workflow |

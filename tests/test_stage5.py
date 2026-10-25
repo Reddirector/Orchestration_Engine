@@ -469,5 +469,92 @@ def test_load_workflow_from_yaml_invalid_mapping() -> None:
         load_workflow_from_yaml("- item 1\n- item 2\n")
 
 
+def test_builder_methods_and_explicit_retry_policy() -> None:
+    from orchestration_engine.builder import WorkflowBuilder
+
+    custom_policy = RetryPolicy(max_attempts=5, delay_seconds=10.0)
+    wf = (
+        WorkflowBuilder("b-wf")
+        .name("Explicit Name")
+        .task("t1", retry_policy=custom_policy)
+        .build()
+    )
+    assert wf.name == "Explicit Name"
+    assert wf.tasks[0].retry_policy == custom_policy
+
+
+def test_load_workflow_from_yaml_stream() -> None:
+    import io
+    pytest.importorskip("yaml")
+    from orchestration_engine.loader import load_workflow_from_yaml
+
+    stream = io.StringIO("workflow_id: stream-wf\nname: Stream\ndescription: d\ntasks: []\n")
+    wf = load_workflow_from_yaml(stream)
+    assert wf.workflow_id == "stream-wf"
+
+
+def test_load_workflow_collect_errors_comprehensive() -> None:
+    from orchestration_engine.errors import WorkflowDefinitionError
+    from orchestration_engine.loader import load_workflow_from_json
+
+    # Test missing tasks key
+    with pytest.raises(WorkflowDefinitionError) as exc_info:
+        load_workflow_from_json({}, collect_errors=True)
+    assert any("/tasks: missing required field" in e for e in exc_info.value.errors)
+
+    # Test tasks not a list
+    with pytest.raises(WorkflowDefinitionError) as exc_info:
+        load_workflow_from_json(
+            {"workflow_id": "w", "name": "n", "description": "d", "tasks": "invalid"},
+            collect_errors=True,
+        )
+    assert any("/tasks: must be a list" in e for e in exc_info.value.errors)
+
+    # Test task element not an object
+    with pytest.raises(WorkflowDefinitionError) as exc_info:
+        load_workflow_from_json(
+            {"workflow_id": "w", "name": "n", "description": "d", "tasks": ["not-a-dict"]},
+            collect_errors=True,
+        )
+    assert any("/tasks/0: must be an object" in e for e in exc_info.value.errors)
+
+    # Test non-string top-level and task fields, and invalid retry_policy type
+    bad_types = {
+        "workflow_id": 123,
+        "name": 456,
+        "description": 789,
+        "tasks": [
+            {
+                "task_id": 101,
+                "name": 102,
+                "description": 103,
+                "dependencies": [999],  # non-string dep
+                "retry_policy": "not-a-dict",  # non-dict retry policy
+            },
+            {
+                "task_id": "t2",
+                "name": "T2",
+                "description": "d",
+                "dependencies": [],
+                "retry_policy": {},  # missing max_attempts and delay_seconds
+            },
+        ],
+    }
+    with pytest.raises(WorkflowDefinitionError) as exc_info:
+        load_workflow_from_json(bad_types, collect_errors=True)
+    errs = exc_info.value.errors
+    assert any("/workflow_id: must be a non-empty string" in e for e in errs)
+    assert any("/name: must be a string" in e for e in errs)
+    assert any("/description: must be a string" in e for e in errs)
+    assert any("/tasks/0/task_id: must be a non-empty string" in e for e in errs)
+    assert any("/tasks/0/name: must be a string" in e for e in errs)
+    assert any("/tasks/0/description: must be a string" in e for e in errs)
+    assert any("/tasks/0/dependencies/0: must be a string" in e for e in errs)
+    assert any("/tasks/0/retry_policy: must be an object" in e for e in errs)
+    assert any("/tasks/1/retry_policy/max_attempts: missing required field" in e for e in errs)
+    assert any("/tasks/1/retry_policy/delay_seconds: missing required field" in e for e in errs)
+
+
+
 
 

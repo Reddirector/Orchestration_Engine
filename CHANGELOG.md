@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-25
+
+### Added
+- `TaskResult(ok: bool, output: Any = None, error: str | None = None)`: frozen dataclass allowing task runners to return output payloads.
+- `Task.inputs: dict[str, Any]`: Automatically populated with upstream outputs `{dep_id: output}` prior to task dispatch.
+- SQLite Schema v2: Added `task_outputs(run_id, task_id, output_json, error)` table with automatic migrations.
+- `Hooks`: Safe post-persistence lifecycle callbacks (`on_task_start`, `on_task_succeeded`, `on_task_failed`, `on_task_retry`, `on_workflow_done`). Exceptions in hooks are safely caught and never disrupt execution.
+- `WorkflowBuilder`: Ergonomic fluent builder for constructing and validating `Workflow` definitions.
+- `workflow_to_dict`: Lossless serializer producing standard JSON-compatible dictionaries that round-trip with `load_workflow_from_json`.
+- `workflow.schema.json`: Formal JSON Schema shipped as package data.
+- Collect-errors loader: `load_workflow_from_json(..., collect_errors=True)` returns a `WorkflowDefinitionError` with an `.errors` list containing JSON-pointer paths for all schema violations.
+- Optional YAML loading: `load_workflow_from_yaml` via optional extra `orchestration-engine[yaml]` using `yaml.safe_load`.
+- Examples: `examples/data_flow.py`, `examples/hooks.py`, `examples/builder.py`.
+
+### Behavior changes
+- Database schema upgraded to v2 (`PRAGMA user_version = 2`), introducing the `task_outputs` table.
+- Task runner can return either `bool` (legacy) or `TaskResult`.
+- Outputs must be JSON-serializable; non-serializable outputs are treated as failed attempts with explanatory `last_error` rather than crashing the engine.
+
 ## [0.4.0] - 2026-10-25
 
 ### Added
