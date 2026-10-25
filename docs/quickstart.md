@@ -50,13 +50,13 @@ workflow = (
     WorkflowBuilder("wf-quickstart", "Data Pipeline")
     .description("Fetch, transform, and load pipeline")
     .default_timeout(30.0)
-    .add_task(
+    .task(
         "fetch",
         name="Fetch API Data",
         retry_policy=RetryPolicy(max_attempts=3, delay_seconds=1.0),
         timeout_seconds=15.0,
     )
-    .add_task(
+    .task(
         "process",
         name="Process Records",
         dependencies=["fetch"],

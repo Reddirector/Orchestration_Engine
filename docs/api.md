@@ -187,7 +187,7 @@ Fluent builder for defining workflows with validation.
 - `WorkflowBuilder(workflow_id: str, name: str)`
 - `.description(desc: str) -> WorkflowBuilder`
 - `.default_timeout(seconds: float | None) -> WorkflowBuilder`
-- `.add_task(task_id: str, name: str, dependencies: list[str] = ..., retry_policy: RetryPolicy = ..., timeout_seconds: float | None = ...) -> WorkflowBuilder`
+- `.task(task_id: str, name: str, dependencies: list[str] = ..., retry_policy: RetryPolicy = ..., timeout_seconds: float | None = ...) -> WorkflowBuilder`
 - `.build() -> Workflow`
 
 ### `workflow_to_dict`
