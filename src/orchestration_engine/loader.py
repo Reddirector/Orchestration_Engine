@@ -23,16 +23,65 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
         raise ValueError(f"workflow missing required field: {e}") from e
 
     default_timeout = json_data.get("default_timeout_seconds")
+    if default_timeout is not None:
+        if (
+            isinstance(default_timeout, bool)
+            or not isinstance(default_timeout, (int, float))
+            or default_timeout < 0
+        ):
+            raise ValueError(
+                "workflow: default_timeout_seconds must be a non-negative number, "
+                f"got {default_timeout!r}"
+            )
+        default_timeout = float(default_timeout)
 
     tasks: list[Task] = []
     for index, task_data in enumerate(json_data["tasks"]):
+        task_id = task_data.get("task_id", f"index {index}")
         try:
+            policy_data = task_data["retry_policy"]
+            max_attempts = policy_data["max_attempts"]
+            if (
+                isinstance(max_attempts, bool)
+                or not isinstance(max_attempts, int)
+                or max_attempts < 1
+            ):
+                raise ValueError(
+                    f"task {task_id}: retry_policy.max_attempts must be an integer >= 1, "
+                    f"got {max_attempts!r}"
+                )
+
+            delay_seconds = policy_data["delay_seconds"]
+            if (
+                isinstance(delay_seconds, bool)
+                or not isinstance(delay_seconds, (int, float))
+                or delay_seconds < 0
+            ):
+                raise ValueError(
+                    f"task {task_id}: retry_policy.delay_seconds must be a non-negative number, "
+                    f"got {delay_seconds!r}"
+                )
+
             retry_policy = RetryPolicy(
-                max_attempts=task_data["retry_policy"]["max_attempts"],
-                delay_seconds=task_data["retry_policy"]["delay_seconds"],
+                max_attempts=max_attempts,
+                delay_seconds=float(delay_seconds),
             )
+
             if "timeout_seconds" in task_data:
-                timeout_seconds = task_data["timeout_seconds"]
+                raw_timeout = task_data["timeout_seconds"]
+                if raw_timeout is not None:
+                    if (
+                        isinstance(raw_timeout, bool)
+                        or not isinstance(raw_timeout, (int, float))
+                        or raw_timeout < 0
+                    ):
+                        raise ValueError(
+                            f"task {task_id}: timeout_seconds must be a non-negative number "
+                            f"or null, got {raw_timeout!r}"
+                        )
+                    timeout_seconds = float(raw_timeout)
+                else:
+                    timeout_seconds = None
             elif default_timeout is not None:
                 timeout_seconds = default_timeout
             else:

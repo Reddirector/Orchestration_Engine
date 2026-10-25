@@ -20,10 +20,10 @@ class RetryPolicy:
 
     Attributes:
         max_attempts: Total number of attempts allowed, including the first.
-        delay_seconds: Delay before each retry attempt.
+        delay_seconds: Base delay before retries, in seconds.
     """
     max_attempts: int
-    delay_seconds: int
+    delay_seconds: float
 
 
 @dataclass
@@ -42,8 +42,8 @@ class Task:
         attempt_count: Number of attempts made so far.
         next_retry_at: Timestamp after which a retry may run, if in RETRY_WAIT.
         timeout_seconds: Seconds allowed before the task is considered timed out and failed.
-            Defaults to 1 — override this for any task whose work (e.g. an LLM or API call)
-            can reasonably take longer than a second.
+            Defaults to 30.0 (None disables timeout).
+        last_error: Error message from the last failed attempt, if any.
     """
     task_id: str
     workflow_id: str

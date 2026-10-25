@@ -73,8 +73,8 @@ def retry_task(
     return ready
 
 
-def calculate_retry_delay(task: Task) -> int:
+def calculate_retry_delay(task: Task) -> float:
     base_delay = task.retry_policy.delay_seconds
     attempt_count = task.attempt_count
 
-    return int(base_delay * (2 ** (attempt_count - 1)))
+    return float(base_delay * (2 ** (attempt_count - 1)))

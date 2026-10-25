@@ -2,6 +2,7 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -172,16 +173,83 @@ def test_g4_exceptions_retried_and_task_states_updated(conn: sqlite3.Connection)
     assert task.last_error == "RuntimeError: boom"
 
 
-@pytest.mark.xfail(strict=True, reason="G11")
 def test_g11_float_seconds_and_validation() -> None:
+    from orchestration_engine.executor import calculate_retry_delay
+    from orchestration_engine.loader import load_workflow_from_json
     from orchestration_engine.validation import validate_workflow
 
-    policy = RetryPolicy(max_attempts=0, delay_seconds=-1.0)  # type: ignore[arg-type]
-    task = Task(
-        "t1", "wf1", "name", "desc", [], TaskState.PENDING, policy, timeout_seconds=-5.0
+    # 1. Float and sub-second support
+    policy = RetryPolicy(max_attempts=3, delay_seconds=0.5)
+    task = Task("t1", "wf1", "name", "desc", [], TaskState.PENDING, policy, timeout_seconds=1.5)
+    assert task.retry_policy.delay_seconds == 0.5
+    task.attempt_count = 1
+    delay1 = calculate_retry_delay(task)
+    assert isinstance(delay1, float)
+    assert delay1 == 0.5
+    task.attempt_count = 2
+    delay2 = calculate_retry_delay(task)
+    assert delay2 == 1.0
+
+    # 2. validate_workflow rejects invalid ranges and booleans
+    bad_policy1 = RetryPolicy(max_attempts=0, delay_seconds=1.0)
+    wf_bad1 = Workflow("wf1", "wf", "desc", [
+        Task("t1", "wf1", "name", "desc", [], TaskState.PENDING, bad_policy1)
+    ])
+    assert validate_workflow(wf_bad1) is False
+
+    bad_policy2 = RetryPolicy(max_attempts=1, delay_seconds=-0.5)
+    wf_bad2 = Workflow("wf1", "wf", "desc", [
+        Task("t1", "wf1", "name", "desc", [], TaskState.PENDING, bad_policy2)
+    ])
+    assert validate_workflow(wf_bad2) is False
+
+    bad_policy_bool = RetryPolicy(max_attempts=cast(int, True), delay_seconds=1.0)
+    wf_bad_bool = Workflow("wf1", "wf", "desc", [
+        Task("t1", "wf1", "name", "desc", [], TaskState.PENDING, bad_policy_bool)
+    ])
+    assert validate_workflow(wf_bad_bool) is False
+
+    bad_timeout_task = Task(
+        "t1", "wf1", "name", "desc", [], TaskState.PENDING, policy, timeout_seconds=-1.0
     )
-    wf = Workflow("wf1", "wf", "desc", [task])
-    assert validate_workflow(wf) is False
+    wf_bad_timeout = Workflow("wf1", "wf", "desc", [bad_timeout_task])
+    assert validate_workflow(wf_bad_timeout) is False
+
+    # 3. loader validation rejects invalid inputs with clear message naming task and field
+    base_json: dict[str, Any] = {
+        "workflow_id": "wf1",
+        "name": "wf",
+        "description": "desc",
+        "tasks": [
+            {
+                "task_id": "step1",
+                "name": "step",
+                "description": "desc",
+                "dependencies": [],
+                "retry_policy": {"max_attempts": 0, "delay_seconds": 1.0},
+            }
+        ],
+    }
+    with pytest.raises(ValueError, match="step1.*max_attempts"):
+        load_workflow_from_json(base_json)
+
+    base_json["tasks"][0]["retry_policy"] = {"max_attempts": True, "delay_seconds": 1.0}
+    with pytest.raises(ValueError, match="step1.*max_attempts"):
+        load_workflow_from_json(base_json)
+
+    base_json["tasks"][0]["retry_policy"] = {"max_attempts": 2, "delay_seconds": -5.0}
+    with pytest.raises(ValueError, match="step1.*delay_seconds"):
+        load_workflow_from_json(base_json)
+
+    base_json["tasks"][0]["retry_policy"] = {"max_attempts": 2, "delay_seconds": 1.0}
+    base_json["tasks"][0]["timeout_seconds"] = -10.0
+    with pytest.raises(ValueError, match="step1.*timeout_seconds"):
+        load_workflow_from_json(base_json)
+
+    base_json["tasks"][0]["timeout_seconds"] = 5.0
+    base_json["default_timeout_seconds"] = -2.0
+    with pytest.raises(ValueError, match="workflow.*default_timeout_seconds"):
+        load_workflow_from_json(base_json)
 
 
 @pytest.mark.xfail(strict=True, reason="G12")
