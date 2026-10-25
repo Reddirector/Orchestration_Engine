@@ -204,6 +204,17 @@ workflow = (
 wf_dict = workflow_to_dict(workflow)
 ```
 
+## Real-World Use Cases
+
+The repository includes complete, runnable reference architectures in `examples/`:
+
+- **[Multi-Step AI Agent Pipeline](examples/agent_pipeline.py)**: Orchestrates LLM tool calling, document retrieval, automated retries on transient API rate limits (`HTTP 429`), concurrent entity extraction, and fan-in executive summary synthesis.
+- **[RAG Knowledge Ingestion & Vector Indexing](examples/rag_document_indexer.py)**: Semantic document chunking, parallel embedding generation with transient backpressure handling, vector store upsert, and an automated quality evaluation gate.
+- **[Autonomous Incident Triage & Remediation](examples/incident_triage.py)**: SRE incident response workflow running parallel diagnostics across logs, metrics, and service dependencies (`max_concurrency=3`), synthesizing root cause analysis (RCA), executing automated remediation, and verifying health recovery.
+- **[Resilient Data Flow & ETL](examples/data_flow.py)**: Producer-consumer data flow where task outputs pass cleanly downstream via `task.inputs` with full transactional persistence.
+
+See the complete [Use Cases Documentation](docs/use-cases.md) for architectural diagrams and deep dives.
+
 ## Public API
 
 | Name | Purpose |

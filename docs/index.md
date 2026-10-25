@@ -23,6 +23,14 @@ Multi-step automation pipelines—such as AI agent workflows, ETL transformation
 - **Lifecycle Hooks**: Non-blocking callbacks (`on_task_start`, `on_task_succeeded`, `on_task_failed`, `on_task_retry`, `on_workflow_done`) for monitoring and logging.
 - **Developer Ergonomics**: Fluent `WorkflowBuilder` API, JSON and YAML workflow definitions, and a CLI tool (`orchestration-engine`).
 
+## Production Use Cases
+
+See the full [Use Cases Guide](use-cases.md) for architectural blueprints and complete implementations:
+- **[Multi-Step AI Agent Pipelines](use-cases.md#1-multi-step-ai-agent-pipelines)**: LLM tool calling, retrieval, rate limit handling, and fan-in synthesis.
+- **[RAG Ingestion & Vector Indexing](use-cases.md#2-rag-document-ingestion-vector-indexing)**: Document chunking, concurrent embedding generation, and quality verification gates.
+- **[Automated Incident Triage & Remediation](use-cases.md#3-automated-incident-triage-remediation-devops-sre)**: Fan-out telemetry diagnostics, root-cause correlation, automated mitigation, and verification.
+- **[Resilient ETL Pipelines](use-cases.md#4-resilient-etl-data-processing-pipelines)**: Fluent DAG construction, type-safe data passing, and transactional SQLite persistence.
+
 ## Design Philosophy
 
 1. **Zero runtime dependencies**: Everything is implemented using the Python standard library (`sqlite3`, `multiprocessing`, `concurrent.futures`, `json`, `argparse`).

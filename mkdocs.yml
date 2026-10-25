@@ -43,6 +43,7 @@ nav:
   - Overview: index.md
   - Installation: install.md
   - Quickstart: quickstart.md
+  - Use Cases: use-cases.md
   - Core Concepts: concepts.md
   - Architecture: architecture.md
   - API Reference: api.md
@@ -74,3 +75,5 @@ nav:
       - "Stage 5 Report": reports/stage-5-report.md
       - "Stage 6 Report": reports/stage-6-report.md
       - "Security Review": reports/security-review.md
+      - "Final Verification": reports/final-verification.md
+      - "Final Release Report": reports/FINAL-REPORT.md
