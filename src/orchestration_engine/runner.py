@@ -146,7 +146,16 @@ def run_workflow(
     except sqlite3.Error as e:
         raise PersistenceError(f"Failed to record run start: {e}") from e
 
-    if executor == "process":
+    if executor == "_inline":
+        _run_coordinator_inline(
+            workflow=workflow,
+            task_states=task_states,
+            time_source=time_source,
+            task_runner=task_runner,
+            conn=conn,
+            sleep=sleep,
+        )
+    elif executor == "process":
         _run_coordinator_process(
             workflow=workflow,
             task_states=task_states,
@@ -180,6 +189,47 @@ def run_workflow(
 
     mirror_task_states(workflow.tasks, task_states)
     return actual_run_id
+
+
+def _run_coordinator_inline(
+    workflow: Workflow,
+    task_states: dict[str, TaskState],
+    time_source: Callable[[], float],
+    task_runner: Callable[[Task], bool],
+    conn: sqlite3.Connection,
+    sleep: Callable[[float], None],
+) -> None:
+    while True:
+        current_time = time_source()
+        schedule_once(workflow, task_states, current_time, conn)
+        ready_tasks = [t for t in workflow.tasks if t.state == TaskState.READY]
+        if not ready_tasks:
+            retry_waits = [
+                task.next_retry_at
+                for task in workflow.tasks
+                if task.state == TaskState.RETRY_WAIT and task.next_retry_at is not None
+            ]
+            if not retry_waits:
+                break
+            wait_time = max(0.0, min(retry_waits) - current_time)
+            sleep(wait_time)
+            continue
+
+        for task in ready_tasks:
+            execute_task(task, conn, current_time)
+            try:
+                success = task_runner(task)
+            except Exception as exc:
+                task.last_error = f"{type(exc).__name__}: {exc}"[:2000]
+                finish_time = time_source()
+                fail_task(task, finish_time, conn, task_states)
+                continue
+
+            finish_time = time_source()
+            if success:
+                complete_task(task, conn, finish_time, task_states)
+            else:
+                fail_task(task, finish_time, conn, task_states)
 
 
 def _run_coordinator_thread(

@@ -112,7 +112,7 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
     )
 
 
-ExecutorType = Literal["thread", "process"]
+ExecutorType = Literal["thread", "process", "_inline"]
 
 
 def run_workflow_from_file(
