@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from orchestration_engine.loader import load_workflow_from_json
 from orchestration_engine.models import (
     RetryPolicy,
     Task,
@@ -15,10 +16,52 @@ from orchestration_engine.persistence import get_connection
 from orchestration_engine.runner import run_workflow
 
 
-@pytest.mark.xfail(strict=True, reason="G1")
 def test_g1_default_timeout_thirty_seconds() -> None:
     task = Task("t1", "wf1", "name", "desc", [], TaskState.PENDING, RetryPolicy(1, 1))
     assert task.timeout_seconds == 30.0
+
+    loaded = load_workflow_from_json({
+        "workflow_id": "wf",
+        "name": "n",
+        "description": "d",
+        "tasks": [{
+            "task_id": "t1", "name": "n", "description": "d",
+            "dependencies": [], "retry_policy": {"max_attempts": 1, "delay_seconds": 1}
+        }]
+    })
+    assert loaded.tasks[0].timeout_seconds == 30.0
+
+    loaded_null = load_workflow_from_json({
+        "workflow_id": "wf",
+        "name": "n",
+        "description": "d",
+        "tasks": [{
+            "task_id": "t1", "name": "n", "description": "d",
+            "dependencies": [], "retry_policy": {"max_attempts": 1, "delay_seconds": 1},
+            "timeout_seconds": None,
+        }]
+    })
+    assert loaded_null.tasks[0].timeout_seconds is None
+
+    loaded_prec = load_workflow_from_json({
+        "workflow_id": "wf",
+        "name": "n",
+        "description": "d",
+        "default_timeout_seconds": 45.0,
+        "tasks": [
+            {
+                "task_id": "t1", "name": "n", "description": "d",
+                "dependencies": [], "retry_policy": {"max_attempts": 1, "delay_seconds": 1},
+                "timeout_seconds": 10.0,
+            },
+            {
+                "task_id": "t2", "name": "n", "description": "d",
+                "dependencies": [], "retry_policy": {"max_attempts": 1, "delay_seconds": 1},
+            }
+        ]
+    })
+    assert loaded_prec.tasks[0].timeout_seconds == 10.0
+    assert loaded_prec.tasks[1].timeout_seconds == 45.0
 
 
 @pytest.mark.xfail(strict=True, reason="G2")
@@ -41,7 +84,7 @@ def test_g3_timeout_does_not_block_engine(conn: sqlite3.Connection) -> None:
         dependencies=[],
         state=TaskState.PENDING,
         retry_policy=RetryPolicy(1, 1),
-        timeout_seconds=0.1,  # type: ignore[arg-type]
+        timeout_seconds=0.1,
     )
     workflow = Workflow("wf1", "wf", "desc", [task])
 
@@ -111,7 +154,7 @@ def test_g11_float_seconds_and_validation() -> None:
 
     policy = RetryPolicy(max_attempts=0, delay_seconds=-1.0)  # type: ignore[arg-type]
     task = Task(
-        "t1", "wf1", "name", "desc", [], TaskState.PENDING, policy, timeout_seconds=-5.0  # type: ignore[arg-type]
+        "t1", "wf1", "name", "desc", [], TaskState.PENDING, policy, timeout_seconds=-5.0
     )
     wf = Workflow("wf1", "wf", "desc", [task])
     assert validate_workflow(wf) is False

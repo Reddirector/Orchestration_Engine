@@ -22,6 +22,8 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
     except KeyError as e:
         raise ValueError(f"workflow missing required field: {e}") from e
 
+    default_timeout = json_data.get("default_timeout_seconds")
+
     tasks: list[Task] = []
     for index, task_data in enumerate(json_data["tasks"]):
         try:
@@ -29,6 +31,13 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
                 max_attempts=task_data["retry_policy"]["max_attempts"],
                 delay_seconds=task_data["retry_policy"]["delay_seconds"],
             )
+            if "timeout_seconds" in task_data:
+                timeout_seconds = task_data["timeout_seconds"]
+            elif default_timeout is not None:
+                timeout_seconds = default_timeout
+            else:
+                timeout_seconds = 30.0
+
             task = Task(
                 task_id=task_data["task_id"],
                 workflow_id=workflow_id,
@@ -37,7 +46,7 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
                 dependencies=task_data["dependencies"],
                 state=TaskState.PENDING,
                 retry_policy=retry_policy,
-                timeout_seconds=task_data.get("timeout_seconds", 1),
+                timeout_seconds=timeout_seconds,
             )
         except KeyError as e:
             raise ValueError(
@@ -49,6 +58,7 @@ def load_workflow_from_json(json_data: dict[str, Any]) -> Workflow:
         name=name,
         description=description,
         tasks=tasks,
+        default_timeout_seconds=default_timeout,
     )
 
 

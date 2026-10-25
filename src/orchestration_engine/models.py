@@ -54,7 +54,7 @@ class Task:
     retry_policy: RetryPolicy
     attempt_count: int = 0
     next_retry_at: float | None = None
-    timeout_seconds: int = 1
+    timeout_seconds: float | None = 30.0
     last_error: str | None = None
 
 
@@ -68,11 +68,13 @@ class Workflow:
         name: Human-readable name.
         description: Human-readable description.
         tasks: The tasks that make up this workflow.
+        default_timeout_seconds: Optional default timeout in seconds for tasks in this workflow.
     """
     workflow_id: str
     name: str
     description: str
     tasks: list[Task]
+    default_timeout_seconds: float | None = None
 
 
 class WorkflowStatus(StrEnum):
