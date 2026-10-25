@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-25
+
+### Behavior changes
+- `run_workflow` returns the `run_id` as a string (was `None`).
+- Single source of truth: Engine internals read `task.state` directly from `Task` models; `task_states` is maintained automatically as a mirror.
+- Resumption after crash: Interrupted tasks in `RUNNING` status are recorded as failed attempts with `error = "interrupted: process exited while running"` and retried or failed per policy.
+- Completed tasks in a resumed run are never re-executed.
+
+### Added
+- Database schema v1 with `PRAGMA user_version`: automatic migrations from v0, adding `run_id`, `next_retry_at`, and `error` columns to `task_events`.
+- `runs` table tracking `run_id`, `workflow_id`, `started_at`, `finished_at`, `status`, and `definition_json`.
+- Connection hardening: `journal_mode=WAL`, `synchronous=NORMAL`, `foreign_keys=ON`, `busy_timeout=5000` for file databases.
+- `resume_run`: Resumes interrupted workflow runs from SQLite.
+- `get_run_status`: Derives workflow status of a run directly from database events.
+- `get_run_history`: Retrieves event history tuples for a specific run.
+- `list_runs`: Lists recorded runs newest first with optional `workflow_id` filtering.
+
+## [0.2.0] - 2026-10-25
+
 ### Behavior changes
 - Runner exceptions follow the retry policy: a `task_runner` callable that raises an exception is retried up to `task.retry_policy.max_attempts` instead of immediately transitioning to `FAILED` on attempt 1.
   - Before: `task_runner` exception immediately transitioned task to `FAILED` regardless of `max_attempts`, leaving `task_states` out of sync.

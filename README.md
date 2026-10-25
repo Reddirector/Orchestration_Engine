@@ -68,6 +68,30 @@ status = run_workflow_from_file("workflow.json", task_runner, time.time, conn)
 print(status)  # WorkflowStatus.SUCCEEDED
 ```
 
+## Durability and Crash Recovery
+
+Every execution is tracked as a distinct run with an explicit or automatically generated `run_id`:
+
+```python
+import time
+from orchestration_engine import get_connection, run_workflow, resume_run, get_run_status, list_runs
+
+conn = get_connection("workflows.db")
+
+# Run a workflow and obtain its run_id
+run_id = run_workflow(workflow, {}, time.time, task_runner, conn)
+
+# Query run status directly from SQLite
+status = get_run_status(conn, run_id)
+
+# List all recorded runs
+runs = list_runs(conn, workflow_id="wf-1")
+
+# If a process was interrupted or crashed (e.g. host reboot, SIGKILL), resume it:
+resumed_status = resume_run(conn, run_id, task_runner, time.time)
+# Completed tasks are never re-run; interrupted tasks are retried per policy.
+```
+
 ## Public API
 
 | Name | Purpose |
@@ -75,12 +99,16 @@ print(status)  # WorkflowStatus.SUCCEEDED
 | `Task`, `Workflow` | Core data models |
 | `RetryPolicy` | Per-task retry configuration (max_attempts, delay_seconds) |
 | `TaskState`, `WorkflowStatus` | State enums (`PENDING`, `READY`, `RUNNING`, `RETRY_WAIT`, `SUCCEEDED`, `FAILED`, `CANCELLED`) |
-| `run_workflow` | Run an already-constructed `Workflow` with optional `sleep` injection |
+| `run_workflow` | Run an already-constructed `Workflow`; returns `run_id` |
 | `run_workflow_from_file` | Load a JSON workflow file and run it end-to-end |
+| `resume_run` | Resume an interrupted workflow run from SQLite |
 | `load_workflow_from_json` | Parse JSON dict into a `Workflow` with validation |
-| `get_workflow_status` | Get a workflow's overall lifecycle status |
+| `get_workflow_status` | Get a workflow's in-memory overall lifecycle status |
+| `get_run_status` | Get run status derived directly from SQLite events |
 | `get_workflow_history` | Retrieve ordered event log tuples for a workflow |
-| `get_connection` | Get or initialize SQLite connection (explicit path, env var, or default) |
+| `get_run_history` | Retrieve ordered event log tuples for a specific run |
+| `list_runs` | List recorded runs newest first (optionally by workflow_id) |
+| `get_connection` | Get or initialize SQLite connection with WAL & migrations |
 | `OrchestrationError` | Base exception for all engine errors |
 | `WorkflowDefinitionError` | Raised on malformed workflow definitions (subclasses `ValueError`) |
 | `WorkflowValidationError` | Raised on invalid workflow DAG structure (subclasses `ValueError`) |
