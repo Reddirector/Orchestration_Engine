@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-25
+
+### Added
+- Complete production-grade release of Orchestration Engine with zero runtime dependencies.
+- Production documentation suite built with MkDocs Material (`docs/`):
+  - Architecture, concepts, quickstart, API reference, performance benchmarks, FAQ, and security policy.
+- End-to-end multi-step AI Agent Pipeline example (`examples/agent_pipeline.py`) demonstrating rate-limit retry handling, fan-out/fan-in concurrency, and crash-resume.
+- Benchmark suite in `benchmarks/` measuring scheduling overhead, SQLite event throughput, and concurrency scaling.
+- Security and DoS protections: input size limits (`MAX_WORKFLOW_FILE_SIZE = 10MB`, `MAX_TASKS_PER_WORKFLOW = 5000`, `MAX_DEPENDENCIES_PER_TASK = 500`), 100% parameterized SQL queries, and safe YAML parsing.
+- Frozen public API contract with strict SemVer and deprecation policy (`docs/policy.md`).
+- Release verification automation (`scripts/verify_release.sh`) and GitHub Actions trusted publishing workflow (`.github/workflows/release.yml`).
+
+### Behavior changes
+- Public API frozen to 25 symbols.
+- Development Status bumped to `5 - Production/Stable`.
+
 ## [0.6.0] - 2026-10-25
 
 ### Added

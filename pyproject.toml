@@ -1,6 +1,6 @@
 [project]
 name = "orchestration-engine"
-version = "0.6.0"
+version = "1.0.0"
 description = "A fault-tolerant workflow orchestration engine"
 readme = "README.md"
 authors = [
@@ -21,7 +21,7 @@ keywords = [
     "task",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
