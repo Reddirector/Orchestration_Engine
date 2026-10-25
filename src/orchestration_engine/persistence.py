@@ -91,6 +91,11 @@ def get_connection(
 
     try:
         conn = sqlite3.connect(target_path)
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("PRAGMA busy_timeout = 5000")
+        if target_path != ":memory:":
+            conn.execute("PRAGMA journal_mode = WAL")
+            conn.execute("PRAGMA synchronous = NORMAL")
         _migrate_database(conn)
         return conn
     except sqlite3.Error as e:

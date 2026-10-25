@@ -82,3 +82,30 @@ def test_migration_v0_to_v1(tmp_path: Path) -> None:
         assert run_hist[0] == (1, "wf-legacy", "task-1", "pending", "ready", 100.0, 0)
     finally:
         conn.close()
+
+
+def test_connection_hardening(tmp_path: Path) -> None:
+    file_db = tmp_path / "hardened.db"
+    conn_file = get_connection(file_db)
+    try:
+        cur = conn_file.execute("PRAGMA journal_mode")
+        assert cur.fetchone()[0].lower() == "wal"
+        cur = conn_file.execute("PRAGMA synchronous")
+        assert cur.fetchone()[0] == 1  # 1 = NORMAL
+        cur = conn_file.execute("PRAGMA foreign_keys")
+        assert cur.fetchone()[0] == 1  # 1 = ON
+        cur = conn_file.execute("PRAGMA busy_timeout")
+        assert cur.fetchone()[0] == 5000
+    finally:
+        conn_file.close()
+
+    conn_mem = get_connection(":memory:")
+    try:
+        cur = conn_mem.execute("PRAGMA journal_mode")
+        assert cur.fetchone()[0].lower() == "memory"
+        cur = conn_mem.execute("PRAGMA foreign_keys")
+        assert cur.fetchone()[0] == 1
+        cur = conn_mem.execute("PRAGMA busy_timeout")
+        assert cur.fetchone()[0] == 5000
+    finally:
+        conn_mem.close()
