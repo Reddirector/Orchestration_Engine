@@ -1,9 +1,12 @@
+import logging
 import sqlite3
 from dataclasses import dataclass
 
 from orchestration_engine.errors import PersistenceError
 from orchestration_engine.models import Task, TaskState
 from orchestration_engine.persistence import log_task_event
+
+logger = logging.getLogger("orchestration_engine")
 
 
 @dataclass
@@ -45,11 +48,12 @@ def transition_task(
     next_retry_at = context.next_retry_at if context is not None else task.next_retry_at
     error = context.error if context is not None else task.last_error
 
+    old_state = task.state
     try:
         log_task_event(
             conn,
             task_id=task.task_id,
-            old_state=task.state.value,
+            old_state=old_state.value,
             new_state=new_state.value,
             timestamp=timestamp,
             attempt_count=task.attempt_count,
@@ -59,11 +63,41 @@ def transition_task(
             error=error,
         )
     except sqlite3.Error as e:
+        logger.error(
+            "Persistence failure during transition of task '%s': %s",
+            task.task_id,
+            e,
+            extra={
+                "workflow_id": task.workflow_id,
+                "run_id": run_id,
+                "task_id": task.task_id,
+                "old_state": old_state.value,
+                "new_state": new_state.value,
+                "attempt": task.attempt_count,
+            },
+        )
         raise PersistenceError(f"Database error during transition: {e}") from e
 
     task.state = new_state
     if task_states is not None:
         task_states[task.task_id] = new_state
+
+    logger.info(
+        "Task '%s' transitioned: %s -> %s (run=%s, attempt=%s)",
+        task.task_id,
+        old_state.value,
+        new_state.value,
+        run_id,
+        task.attempt_count,
+        extra={
+            "workflow_id": task.workflow_id,
+            "run_id": run_id,
+            "task_id": task.task_id,
+            "old_state": old_state.value,
+            "new_state": new_state.value,
+            "attempt": task.attempt_count,
+        },
+    )
     return True
 
 

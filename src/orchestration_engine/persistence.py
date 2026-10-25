@@ -1,9 +1,12 @@
 import json
+import logging
 import os
 import sqlite3
 from typing import Any
 
 from orchestration_engine.errors import PersistenceError
+
+logger = logging.getLogger("orchestration_engine")
 
 DB_PATH = "orchestration.db"
 
@@ -173,6 +176,19 @@ def get_connection(
         _migrate_database(conn)
         return conn
     except sqlite3.Error as e:
+        logger.error(
+            "Persistence failure initializing database at %s: %s",
+            target_path,
+            e,
+            extra={
+                "workflow_id": None,
+                "run_id": None,
+                "task_id": None,
+                "old_state": None,
+                "new_state": None,
+                "attempt": None,
+            },
+        )
         raise PersistenceError(f"Failed to initialize database at {target_path}: {e}") from e
 
 
@@ -219,6 +235,19 @@ def log_task_event(
         )
         conn.commit()
     except sqlite3.Error as e:
+        logger.error(
+            "Persistence failure logging task event for %s: %s",
+            task_id,
+            e,
+            extra={
+                "workflow_id": workflow_id,
+                "run_id": run_id,
+                "task_id": task_id,
+                "old_state": old_state,
+                "new_state": new_state,
+                "attempt": attempt_count,
+            },
+        )
         raise PersistenceError(f"Failed to log task event for {task_id}: {e}") from e
 
 

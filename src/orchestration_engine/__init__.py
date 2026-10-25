@@ -1,4 +1,5 @@
 import importlib.metadata
+import logging
 
 from .builder import WorkflowBuilder, workflow_to_dict
 from .errors import (
@@ -17,10 +18,12 @@ from .persistence import get_connection, get_run_history, get_workflow_history, 
 from .runner import resume_run, run_workflow
 from .status import get_run_status, get_workflow_status
 
+logging.getLogger("orchestration_engine").addHandler(logging.NullHandler())
+
 try:
     __version__ = importlib.metadata.version("orchestration-engine")
 except importlib.metadata.PackageNotFoundError:
-    __version__ = "0.5.0"
+    __version__ = "0.6.0"
 
 __all__ = [
     "__version__",

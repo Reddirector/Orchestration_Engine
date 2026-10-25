@@ -1,5 +1,6 @@
 import concurrent.futures
 import json
+import logging
 import multiprocessing
 import multiprocessing.connection
 import pickle
@@ -33,6 +34,8 @@ from orchestration_engine.scheduler import schedule_once
 from orchestration_engine.status import get_workflow_status
 from orchestration_engine.transitions import mirror_task_states
 from orchestration_engine.validation import get_workflow_validation_error
+
+logger = logging.getLogger("orchestration_engine")
 
 ExecutorType = Literal["thread", "process", "_inline"]
 TaskRunnerCallable = Callable[[Task], bool | TaskResult]
@@ -215,6 +218,18 @@ def run_workflow(
         )
         conn.commit()
     except sqlite3.Error as e:
+        logger.error(
+            "Persistence failure recording run start: %s",
+            e,
+            extra={
+                "workflow_id": workflow.workflow_id,
+                "run_id": actual_run_id,
+                "task_id": None,
+                "old_state": None,
+                "new_state": None,
+                "attempt": None,
+            },
+        )
         raise PersistenceError(f"Failed to record run start: {e}") from e
 
     run_outputs = get_task_outputs(conn, actual_run_id)
@@ -267,6 +282,18 @@ def run_workflow(
         )
         conn.commit()
     except sqlite3.Error as e:
+        logger.error(
+            "Persistence failure recording run completion: %s",
+            e,
+            extra={
+                "workflow_id": workflow.workflow_id,
+                "run_id": actual_run_id,
+                "task_id": None,
+                "old_state": None,
+                "new_state": None,
+                "attempt": None,
+            },
+        )
         raise PersistenceError(f"Failed to record run completion: {e}") from e
 
     if hooks:
@@ -537,6 +564,20 @@ def _run_coordinator_thread(
                 if dl is not None and mono_now >= dl:
                     del in_flight[fut]
                     fail_time = time_source()
+                    logger.warning(
+                        "Task '%s' timed out after %ss (attempt %s)",
+                        task.task_id,
+                        task.timeout_seconds,
+                        task.attempt_count,
+                        extra={
+                            "workflow_id": task.workflow_id,
+                            "run_id": run_id,
+                            "task_id": task.task_id,
+                            "old_state": task.state.value,
+                            "new_state": task.state.value,
+                            "attempt": task.attempt_count,
+                        },
+                    )
                     _handle_task_failure(
                         task,
                         f"timeout after {task.timeout_seconds}s",
@@ -714,6 +755,20 @@ def _run_coordinator_process(
                             proc.kill()
                             proc.join(timeout=0.1)
                     fail_time = time_source()
+                    logger.warning(
+                        "Task '%s' timed out after %ss (attempt %s)",
+                        task.task_id,
+                        task.timeout_seconds,
+                        task.attempt_count,
+                        extra={
+                            "workflow_id": task.workflow_id,
+                            "run_id": run_id,
+                            "task_id": task.task_id,
+                            "old_state": task.state.value,
+                            "new_state": task.state.value,
+                            "attempt": task.attempt_count,
+                        },
+                    )
                     _handle_task_failure(
                         task,
                         f"timeout after {task.timeout_seconds}s",

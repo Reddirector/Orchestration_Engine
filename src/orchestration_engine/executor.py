@@ -1,7 +1,10 @@
+import logging
 import sqlite3
 
 from orchestration_engine.models import Task, TaskState
 from orchestration_engine.transitions import transition_task
+
+logger = logging.getLogger("orchestration_engine")
 
 
 def execute_task(task: Task, conn: sqlite3.Connection, timestamp: float) -> bool:
@@ -38,6 +41,21 @@ def fail_task(
 
     if task.attempt_count < task.retry_policy.max_attempts:
         task.next_retry_at = current_time + calculate_retry_delay(task)
+        logger.warning(
+            "Task '%s' failed attempt %s/%s; retrying at %s",
+            task.task_id,
+            task.attempt_count,
+            task.retry_policy.max_attempts,
+            task.next_retry_at,
+            extra={
+                "workflow_id": task.workflow_id,
+                "run_id": getattr(task, "_run_id", None),
+                "task_id": task.task_id,
+                "old_state": task.state.value,
+                "new_state": TaskState.RETRY_WAIT.value,
+                "attempt": task.attempt_count,
+            },
+        )
         return transition_task(
             task, TaskState.RETRY_WAIT, conn, current_time, task_states=task_states
         )
