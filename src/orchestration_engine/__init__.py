@@ -1,3 +1,5 @@
+import importlib.metadata
+
 from .errors import (
     OrchestrationError,
     PersistenceError,
@@ -10,7 +12,13 @@ from .persistence import get_connection, get_workflow_history
 from .runner import run_workflow
 from .status import get_workflow_status
 
+try:
+    __version__ = importlib.metadata.version("orchestration-engine")
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "0.2.0"
+
 __all__ = [
+    "__version__",
     "Task",
     "Workflow",
     "RetryPolicy",

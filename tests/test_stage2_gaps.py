@@ -278,6 +278,14 @@ def test_g12_orchestration_error_hierarchy() -> None:
     assert task.state == TaskState.PENDING
 
 
+def test_version_exposed() -> None:
+    import orchestration_engine
+
+    assert hasattr(orchestration_engine, "__version__")
+    assert isinstance(orchestration_engine.__version__, str)
+    assert len(orchestration_engine.__version__) > 0
+
+
 def test_g13_retry_delay_measured_from_finish_time(conn: sqlite3.Connection) -> None:
     current_time = 100.0
     task = Task(
