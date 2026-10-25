@@ -333,3 +333,167 @@ def test_transitive_cancellation_diamond_case(conn) -> None:
     assert task_d.state == TaskState.SUCCEEDED
     assert task_e.state == TaskState.CANCELLED
     assert get_workflow_status(workflow) == WorkflowStatus.FAILED
+
+
+def test_retry_wait_task_retries_and_succeeds(conn) -> None:
+    retry_policy = RetryPolicy(max_attempts=2, delay_seconds=5)
+    task = Task(
+        task_id="task-1",
+        workflow_id="wf-retry-sleep",
+        name="Retry Task",
+        description="Fails once, then succeeds on retry",
+        state=TaskState.PENDING,
+        retry_policy=retry_policy,
+        dependencies=[],
+    )
+    workflow = Workflow(
+        workflow_id="wf-retry-sleep",
+        name="Retry Sleep Workflow",
+        description="Tests run_workflow sleeps and retries",
+        tasks=[task],
+    )
+    task_states: dict[str, TaskState] = {}
+    attempts = {"count": 0}
+
+    def runner(t: Task) -> bool:
+        attempts["count"] += 1
+        return attempts["count"] > 1
+
+    current_time = 100.0
+    sleeps: list[float] = []
+
+    def time_source() -> float:
+        return current_time
+
+    def fake_sleep(seconds: float) -> None:
+        nonlocal current_time
+        sleeps.append(seconds)
+        current_time += seconds
+
+    run_workflow(
+        workflow,
+        task_states,
+        time_source=time_source,
+        task_runner=runner,
+        conn=conn,
+        sleep=fake_sleep,
+    )
+
+    assert task.state == TaskState.SUCCEEDED
+    assert task.attempt_count == 2
+    assert sleeps == [5.0]
+    assert get_workflow_status(workflow) == WorkflowStatus.SUCCEEDED
+
+
+def test_retry_wait_task_fails_after_max_attempts(conn) -> None:
+    retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
+    task = Task(
+        task_id="task-1",
+        workflow_id="wf-max-attempts",
+        name="Always Failing Task",
+        description="Fails all attempts",
+        state=TaskState.PENDING,
+        retry_policy=retry_policy,
+        dependencies=[],
+    )
+    workflow = Workflow(
+        workflow_id="wf-max-attempts",
+        name="Max Attempts Workflow",
+        description="Tests run_workflow retries up to max_attempts then fails",
+        tasks=[task],
+    )
+    task_states: dict[str, TaskState] = {}
+    attempts = {"count": 0}
+
+    def runner(t: Task) -> bool:
+        attempts["count"] += 1
+        return False
+
+    current_time = 50.0
+    sleeps: list[float] = []
+
+    def time_source() -> float:
+        return current_time
+
+    def fake_sleep(seconds: float) -> None:
+        nonlocal current_time
+        sleeps.append(seconds)
+        current_time += seconds
+
+    run_workflow(
+        workflow,
+        task_states,
+        time_source=time_source,
+        task_runner=runner,
+        conn=conn,
+        sleep=fake_sleep,
+    )
+
+    assert attempts["count"] == 3
+    assert task.attempt_count == 3
+    assert task.state == TaskState.FAILED
+    assert sleeps == [5.0, 10.0]
+    assert get_workflow_status(workflow) == WorkflowStatus.FAILED
+
+
+def test_retry_wait_independent_task_succeeds_while_other_waits(conn) -> None:
+    retry_policy_a = RetryPolicy(max_attempts=2, delay_seconds=5)
+    retry_policy_d = RetryPolicy(max_attempts=1, delay_seconds=1)
+    task_a = Task(
+        task_id="A",
+        workflow_id="wf-independent-retry",
+        name="Task A",
+        description="Fails all attempts",
+        state=TaskState.PENDING,
+        retry_policy=retry_policy_a,
+        dependencies=[],
+    )
+    task_d = Task(
+        task_id="D",
+        workflow_id="wf-independent-retry",
+        name="Task D",
+        description="Independent, succeeds",
+        state=TaskState.PENDING,
+        retry_policy=retry_policy_d,
+        dependencies=[],
+    )
+    workflow = Workflow(
+        workflow_id="wf-independent-retry",
+        name="Independent Retry Workflow",
+        description="Tests independent task succeeds while another waits in RETRY_WAIT",
+        tasks=[task_a, task_d],
+    )
+    task_states: dict[str, TaskState] = {}
+    attempts_a = {"count": 0}
+
+    def runner(t: Task) -> bool:
+        if t.task_id == "A":
+            attempts_a["count"] += 1
+            return False
+        return True
+
+    current_time = 0.0
+    sleeps: list[float] = []
+
+    def time_source() -> float:
+        return current_time
+
+    def fake_sleep(seconds: float) -> None:
+        nonlocal current_time
+        sleeps.append(seconds)
+        current_time += seconds
+
+    run_workflow(
+        workflow,
+        task_states,
+        time_source=time_source,
+        task_runner=runner,
+        conn=conn,
+        sleep=fake_sleep,
+    )
+
+    assert task_d.state == TaskState.SUCCEEDED
+    assert task_a.state == TaskState.FAILED
+    assert attempts_a["count"] == 2
+    assert sleeps == [5.0]
+    assert get_workflow_status(workflow) == WorkflowStatus.FAILED

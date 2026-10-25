@@ -1,4 +1,5 @@
 import sqlite3
+import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from orchestration_engine.executor import execute_task, complete_task, fail_task
@@ -13,7 +14,8 @@ def run_workflow(
     task_states: dict[str, TaskState],
     time_source: Callable[[], float],
     task_runner: Callable[[Task], bool],
-    conn: sqlite3.Connection
+    conn: sqlite3.Connection,
+    sleep: Callable[[float], None] = time.sleep,
 ) -> None:
     """
     Run a Workflow to completion, executing tasks as their dependencies clear.
@@ -38,7 +40,16 @@ def run_workflow(
         current_time = time_source()
         ready = schedule_once(workflow, task_states, current_time, conn)
         if not ready:
-            break
+            retry_waits = [
+                task.next_retry_at
+                for task in workflow.tasks
+                if task.state == TaskState.RETRY_WAIT and task.next_retry_at is not None
+            ]
+            if not retry_waits:
+                break
+            wait_time = max(0.0, min(retry_waits) - current_time)
+            sleep(wait_time)
+            continue
 
         for task in ready:
             execute_task(task, conn, current_time)
