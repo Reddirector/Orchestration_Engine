@@ -9,7 +9,35 @@ authors = [
 requires-python = ">=3.12"
 dependencies = []
 license = "Apache-2.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "CHANGELOG.md"]
+keywords = [
+    "workflow",
+    "orchestration",
+    "dag",
+    "scheduler",
+    "pipeline",
+    "agent",
+    "retry",
+    "task",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/Reddirector/Orchestration_Engine"
+Repository = "https://github.com/Reddirector/Orchestration_Engine"
+Issues = "https://github.com/Reddirector/Orchestration_Engine/issues"
+Changelog = "https://github.com/Reddirector/Orchestration_Engine/blob/main/CHANGELOG.md"
+Documentation = "https://reddirector.github.io/Orchestration_Engine/"
 
 [project.optional-dependencies]
 yaml = ["pyyaml>=6.0"]
