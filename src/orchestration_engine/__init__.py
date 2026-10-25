@@ -7,7 +7,11 @@ from .errors import (
     WorkflowDefinitionError,
     WorkflowValidationError,
 )
-from .loader import load_workflow_from_json, run_workflow_from_file
+from .loader import (
+    load_workflow_from_json,
+    load_workflow_from_yaml,
+    run_workflow_from_file,
+)
 from .models import Hooks, RetryPolicy, Task, TaskResult, TaskState, Workflow, WorkflowStatus
 from .persistence import get_connection, get_run_history, get_workflow_history, list_runs
 from .runner import resume_run, run_workflow
@@ -33,6 +37,7 @@ __all__ = [
     "run_workflow_from_file",
     "resume_run",
     "load_workflow_from_json",
+    "load_workflow_from_yaml",
     "get_workflow_status",
     "get_run_status",
     "get_workflow_history",

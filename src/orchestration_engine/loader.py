@@ -1,9 +1,10 @@
 import json
+import os
 import sqlite3
 from collections.abc import Callable
 from typing import Any, Literal
 
-from orchestration_engine.errors import WorkflowDefinitionError
+from orchestration_engine.errors import OrchestrationError, WorkflowDefinitionError
 from orchestration_engine.models import (
     Hooks,
     RetryPolicy,
@@ -271,3 +272,42 @@ def run_workflow_from_file(
     )
 
     return get_workflow_status(workflow)
+
+
+def load_workflow_from_yaml(
+    source: str | os.PathLike[str] | Any,
+    *,
+    collect_errors: bool = False,
+) -> Workflow:
+    """
+    Parse a YAML workflow definition (file path, YAML string, or stream) into a Workflow.
+
+    Requires the optional 'yaml' extra (PyYAML). Raises OrchestrationError if PyYAML
+    is not installed.
+    """
+    try:
+        import yaml
+    except ImportError as e:
+        raise OrchestrationError(
+            "PyYAML is required to load workflows from YAML. "
+            "Install it with: pip install 'orchestration-engine[yaml]'"
+        ) from e
+
+    data: Any
+    if isinstance(source, (str, os.PathLike)):
+        try:
+            with open(source) as f:
+                data = yaml.safe_load(f)
+        except (OSError, FileNotFoundError):
+            if isinstance(source, str) and ("\n" in source or ":" in source):
+                data = yaml.safe_load(source)
+            else:
+                raise
+    else:
+        data = yaml.safe_load(source)
+
+    if not isinstance(data, dict):
+        raise WorkflowDefinitionError("YAML workflow definition must be a mapping/object")
+
+    return load_workflow_from_json(data, collect_errors=collect_errors)
+

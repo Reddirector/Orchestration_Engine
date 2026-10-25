@@ -1,6 +1,7 @@
 import sqlite3
 import time
 from dataclasses import FrozenInstanceError
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -411,6 +412,62 @@ def test_load_workflow_ignores_unknown_keys() -> None:
     assert wf.workflow_id == "wf-extra"
     assert len(wf.tasks) == 1
     assert wf.tasks[0].task_id == "t1"
+
+
+def test_load_workflow_from_yaml_missing_pyyaml(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    from orchestration_engine.errors import OrchestrationError
+    from orchestration_engine.loader import load_workflow_from_yaml
+
+    # Simulate missing PyYAML
+    monkeypatch.setitem(sys.modules, "yaml", None)
+
+    with pytest.raises(OrchestrationError, match="orchestration-engine\\[yaml\\]"):
+        load_workflow_from_yaml("workflow_id: foo")
+
+
+def test_load_workflow_from_yaml_success(tmp_path: Path) -> None:
+    pytest.importorskip("yaml")
+    from orchestration_engine.loader import load_workflow_from_yaml
+
+    yaml_content = """
+workflow_id: yaml-wf
+name: YAML Workflow
+description: Defined in YAML
+default_timeout_seconds: 15.0
+tasks:
+  - task_id: step1
+    name: Step 1
+    description: First YAML step
+    dependencies: []
+    retry_policy:
+      max_attempts: 2
+      delay_seconds: 1.5
+    timeout_seconds: 10.0
+"""
+    # From string
+    wf_from_str = load_workflow_from_yaml(yaml_content)
+    assert wf_from_str.workflow_id == "yaml-wf"
+    assert len(wf_from_str.tasks) == 1
+    assert wf_from_str.tasks[0].task_id == "step1"
+    assert wf_from_str.tasks[0].retry_policy.max_attempts == 2
+
+    # From file
+    yaml_file = tmp_path / "workflow.yaml"
+    yaml_file.write_text(yaml_content)
+    wf_from_file = load_workflow_from_yaml(yaml_file)
+    assert wf_from_file.workflow_id == "yaml-wf"
+
+
+def test_load_workflow_from_yaml_invalid_mapping() -> None:
+    pytest.importorskip("yaml")
+    from orchestration_engine.errors import WorkflowDefinitionError
+    from orchestration_engine.loader import load_workflow_from_yaml
+
+    with pytest.raises(WorkflowDefinitionError, match="mapping"):
+        load_workflow_from_yaml("- item 1\n- item 2\n")
+
 
 
 
