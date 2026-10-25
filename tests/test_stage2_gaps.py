@@ -65,8 +65,8 @@ def test_g3_timeout_does_not_block_engine(conn: sqlite3.Connection) -> None:
         unblock_event.set()
 
 
-@pytest.mark.xfail(strict=True, reason="G4")
 def test_g4_exceptions_retried_and_task_states_updated(conn: sqlite3.Connection) -> None:
+    current_time = 100.0
     task = Task(
         task_id="t1",
         workflow_id="wf1",
@@ -78,21 +78,31 @@ def test_g4_exceptions_retried_and_task_states_updated(conn: sqlite3.Connection)
     )
     workflow = Workflow("wf1", "wf", "desc", [task])
     task_states: dict[str, TaskState] = {}
+    attempts = 0
 
     def crashing_runner(_t: Task) -> bool:
-        raise RuntimeError("boom")
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("boom")
+        return True
+
+    def fake_sleep(seconds: float) -> None:
+        nonlocal current_time
+        current_time += seconds
 
     run_workflow(
         workflow,
         task_states,
-        time_source=lambda: 100.0,
+        time_source=lambda: current_time,
         task_runner=crashing_runner,
         conn=conn,
+        sleep=fake_sleep,
     )
-    assert task.attempt_count == 1
-    assert task.state == TaskState.RETRY_WAIT
-    assert task_states["t1"] == TaskState.RETRY_WAIT
-    assert getattr(task, "last_error", None) == "RuntimeError: boom"
+    assert task.attempt_count == 2
+    assert task.state == TaskState.SUCCEEDED
+    assert task_states["t1"] == TaskState.SUCCEEDED
+    assert task.last_error == "RuntimeError: boom"
 
 
 @pytest.mark.xfail(strict=True, reason="G11")

@@ -7,7 +7,6 @@ from concurrent.futures import TimeoutError as FutureTimeoutError
 from orchestration_engine.executor import complete_task, execute_task, fail_task
 from orchestration_engine.models import Task, TaskState, Workflow
 from orchestration_engine.scheduler import schedule_once
-from orchestration_engine.transitions import transition_task
 from orchestration_engine.validation import validate_workflow
 
 
@@ -64,12 +63,15 @@ def run_workflow(
                     future = pool.submit(task_runner, task)
                     success = future.result(timeout=task.timeout_seconds)
                 except FutureTimeoutError:
+                    task.last_error = f"timeout after {task.timeout_seconds}s"
                     finish_time = time_source()
                     fail_task(task, finish_time, conn, task_states)
                     continue
-                except Exception:
+                except Exception as exc:
+                    err_msg = f"{type(exc).__name__}: {exc}"
+                    task.last_error = err_msg[:2000]
                     finish_time = time_source()
-                    transition_task(task, TaskState.FAILED, conn, finish_time)
+                    fail_task(task, finish_time, conn, task_states)
                     continue
             finally:
                 pool.shutdown(wait=False, cancel_futures=True)

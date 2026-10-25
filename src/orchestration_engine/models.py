@@ -55,6 +55,7 @@ class Task:
     attempt_count: int = 0
     next_retry_at: float | None = None
     timeout_seconds: int = 1
+    last_error: str | None = None
 
 
 @dataclass

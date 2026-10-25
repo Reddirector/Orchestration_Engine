@@ -121,7 +121,7 @@ def test_run_workflow_retries_using_time_source(conn: sqlite3.Connection) -> Non
 
 
 def test_run_workflow_marks_task_failed_on_runner_exception(conn: sqlite3.Connection) -> None:
-    retry_policy = RetryPolicy(max_attempts=3, delay_seconds=5)
+    retry_policy = RetryPolicy(max_attempts=1, delay_seconds=5)
 
     task = Task(
         task_id="task-1",
@@ -143,7 +143,7 @@ def test_run_workflow_marks_task_failed_on_runner_exception(conn: sqlite3.Connec
     task_states: dict[str, TaskState] = {"task-1": TaskState.PENDING}
 
     def task_runner(task: Task) -> bool:
-        raise RuntimeError
+        raise RuntimeError("boom")
 
     run_workflow(
         workflow,
@@ -154,6 +154,9 @@ def test_run_workflow_marks_task_failed_on_runner_exception(conn: sqlite3.Connec
     )
 
     assert task.state == TaskState.FAILED
+    assert task.attempt_count == 1
+    assert task_states["task-1"] == TaskState.FAILED
+    assert task.last_error == "RuntimeError: boom"
 
 
 def test_run_workflow_retries_on_timeout(conn: sqlite3.Connection) -> None:
