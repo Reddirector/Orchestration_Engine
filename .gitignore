@@ -10,3 +10,5 @@ orchestration.db
 .coverage.*
 htmlcov/
 .pytest_cache/
+site/
+dist/
