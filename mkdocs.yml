@@ -50,6 +50,7 @@ nav:
   - Performance & Benchmarks: performance.md
   - FAQ: faq.md
   - Limitations: limitations.md
+  - Project Policy: policy.md
   - Architecture Decisions:
       - "ADR 001: Thread Pool Timeouts": decisions/001-thread-pool-non-blocking-timeouts.md
       - "ADR 002: Exception Retries": decisions/002-exception-retry-and-last-error.md
