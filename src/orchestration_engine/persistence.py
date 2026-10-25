@@ -1,15 +1,30 @@
+import os
 import sqlite3
 from typing import Any
 
 DB_PATH = "orchestration.db"
 
 
-def get_connection() -> sqlite3.Connection:
+def get_connection(
+    path: str | os.PathLike[str] | None = None,
+) -> sqlite3.Connection:
     """
     Open a connection to the engine's SQLite database, creating the
     task_events table if it doesn't already exist.
+
+    Precedence:
+        1. Explicit path argument
+        2. Environment variable ORCHESTRATION_ENGINE_DB
+        3. Default DB_PATH ("orchestration.db")
     """
-    conn = sqlite3.connect(DB_PATH)
+    if path is not None:
+        target_path = str(path)
+    elif "ORCHESTRATION_ENGINE_DB" in os.environ:
+        target_path = os.environ["ORCHESTRATION_ENGINE_DB"]
+    else:
+        target_path = DB_PATH
+
+    conn = sqlite3.connect(target_path)
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS task_events (

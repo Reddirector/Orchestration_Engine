@@ -16,7 +16,7 @@ def task_runner(task) -> bool:
 
 
 def main() -> None:
-    conn = get_connection()
+    conn = get_connection(":memory:")
     status = run_workflow_from_file(
         "examples/simple_workflow.json",
         task_runner,

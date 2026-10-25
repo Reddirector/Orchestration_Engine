@@ -64,14 +64,38 @@ def test_g1_default_timeout_thirty_seconds() -> None:
     assert loaded_prec.tasks[1].timeout_seconds == 45.0
 
 
-@pytest.mark.xfail(strict=True, reason="G2")
-def test_g2_get_connection_accepts_path(tmp_path: Path) -> None:
+def test_g2_get_connection_accepts_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     custom_db = tmp_path / "custom.db"
-    conn = get_connection(custom_db)  # type: ignore[call-arg]
+    conn = get_connection(custom_db)
     try:
         assert custom_db.exists()
     finally:
         conn.close()
+
+    # Precedence test: env var
+    env_db = tmp_path / "env.db"
+    monkeypatch.setenv("ORCHESTRATION_ENGINE_DB", str(env_db))
+    conn_env = get_connection()
+    try:
+        assert env_db.exists()
+    finally:
+        conn_env.close()
+
+    # Explicit arg overrides env var
+    override_db = tmp_path / "override.db"
+    conn_override = get_connection(override_db)
+    try:
+        assert override_db.exists()
+    finally:
+        conn_override.close()
+
+    # Memory db
+    conn_mem = get_connection(":memory:")
+    try:
+        cursor = conn_mem.execute("SELECT 1")
+        assert cursor.fetchone()[0] == 1
+    finally:
+        conn_mem.close()
 
 
 def test_g3_timeout_does_not_block_engine(conn: sqlite3.Connection) -> None:
