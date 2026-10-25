@@ -305,7 +305,8 @@ def load_workflow_from_yaml(
         try:
             if os.path.exists(source) and os.path.getsize(source) > MAX_WORKFLOW_FILE_SIZE:
                 raise WorkflowDefinitionError(
-                    f"Workflow file '{source}' exceeds maximum allowed size of {MAX_WORKFLOW_FILE_SIZE} bytes"
+                    f"Workflow file '{source}' exceeds maximum allowed size "
+                    f"of {MAX_WORKFLOW_FILE_SIZE} bytes"
                 )
             with open(source) as f:
                 data = yaml.safe_load(f)
