@@ -1,0 +1,155 @@
+import sqlite3
+import threading
+import time
+from pathlib import Path
+
+import pytest
+
+from orchestration_engine.models import (
+    RetryPolicy,
+    Task,
+    TaskState,
+    Workflow,
+)
+from orchestration_engine.persistence import get_connection
+from orchestration_engine.runner import run_workflow
+
+
+@pytest.mark.xfail(strict=True, reason="G1")
+def test_g1_default_timeout_thirty_seconds() -> None:
+    task = Task("t1", "wf1", "name", "desc", [], TaskState.PENDING, RetryPolicy(1, 1))
+    assert task.timeout_seconds == 30.0
+
+
+@pytest.mark.xfail(strict=True, reason="G2")
+def test_g2_get_connection_accepts_path(tmp_path: Path) -> None:
+    custom_db = tmp_path / "custom.db"
+    conn = get_connection(custom_db)  # type: ignore[call-arg]
+    try:
+        assert custom_db.exists()
+    finally:
+        conn.close()
+
+
+@pytest.mark.xfail(strict=True, reason="G3")
+def test_g3_timeout_does_not_block_engine(conn: sqlite3.Connection) -> None:
+    unblock_event = threading.Event()
+    task = Task(
+        task_id="t1",
+        workflow_id="wf1",
+        name="Hung Task",
+        description="desc",
+        dependencies=[],
+        state=TaskState.PENDING,
+        retry_policy=RetryPolicy(1, 1),
+        timeout_seconds=0.1,  # type: ignore[arg-type]
+    )
+    workflow = Workflow("wf1", "wf", "desc", [task])
+
+    def blocking_runner(_t: Task) -> bool:
+        unblock_event.wait(timeout=5.0)
+        return True
+
+    start = time.perf_counter()
+    try:
+        run_workflow(
+            workflow,
+            {},
+            time_source=lambda: 100.0,
+            task_runner=blocking_runner,
+            conn=conn,
+        )
+        elapsed = time.perf_counter() - start
+        assert elapsed < 1.0
+        assert task.state == TaskState.FAILED
+    finally:
+        unblock_event.set()
+
+
+@pytest.mark.xfail(strict=True, reason="G4")
+def test_g4_exceptions_retried_and_task_states_updated(conn: sqlite3.Connection) -> None:
+    task = Task(
+        task_id="t1",
+        workflow_id="wf1",
+        name="Flaky Task",
+        description="desc",
+        dependencies=[],
+        state=TaskState.PENDING,
+        retry_policy=RetryPolicy(2, 5),
+    )
+    workflow = Workflow("wf1", "wf", "desc", [task])
+    task_states: dict[str, TaskState] = {}
+
+    def crashing_runner(_t: Task) -> bool:
+        raise RuntimeError("boom")
+
+    run_workflow(
+        workflow,
+        task_states,
+        time_source=lambda: 100.0,
+        task_runner=crashing_runner,
+        conn=conn,
+    )
+    assert task.attempt_count == 1
+    assert task.state == TaskState.RETRY_WAIT
+    assert task_states["t1"] == TaskState.RETRY_WAIT
+    assert getattr(task, "last_error", None) == "RuntimeError: boom"
+
+
+@pytest.mark.xfail(strict=True, reason="G11")
+def test_g11_float_seconds_and_validation() -> None:
+    from orchestration_engine.validation import validate_workflow
+
+    policy = RetryPolicy(max_attempts=0, delay_seconds=-1.0)  # type: ignore[arg-type]
+    task = Task(
+        "t1", "wf1", "name", "desc", [], TaskState.PENDING, policy, timeout_seconds=-5.0  # type: ignore[arg-type]
+    )
+    wf = Workflow("wf1", "wf", "desc", [task])
+    assert validate_workflow(wf) is False
+
+
+@pytest.mark.xfail(strict=True, reason="G12")
+def test_g12_orchestration_error_hierarchy() -> None:
+    from orchestration_engine.errors import (  # type: ignore[import-not-found]
+        OrchestrationError,
+        WorkflowDefinitionError,
+        WorkflowValidationError,
+    )
+
+    assert issubclass(WorkflowDefinitionError, OrchestrationError)
+    assert issubclass(WorkflowDefinitionError, ValueError)
+    assert issubclass(WorkflowValidationError, OrchestrationError)
+    assert issubclass(WorkflowValidationError, ValueError)
+
+
+@pytest.mark.xfail(strict=True, reason="G13")
+def test_g13_retry_delay_measured_from_finish_time(conn: sqlite3.Connection) -> None:
+    current_time = 100.0
+    task = Task(
+        task_id="t1",
+        workflow_id="wf1",
+        name="Long Failing Task",
+        description="desc",
+        dependencies=[],
+        state=TaskState.PENDING,
+        retry_policy=RetryPolicy(2, 5),
+    )
+    workflow = Workflow("wf1", "wf", "desc", [task])
+
+    def advancing_time() -> float:
+        return current_time
+
+    def runner(_t: Task) -> bool:
+        nonlocal current_time
+        current_time += 20.0
+        return False
+
+    run_workflow(
+        workflow,
+        {},
+        time_source=advancing_time,
+        task_runner=runner,
+        conn=conn,
+    )
+    assert task.state == TaskState.RETRY_WAIT
+    assert task.next_retry_at == 125.0
