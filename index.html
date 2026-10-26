@@ -318,6 +318,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#quick-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#mission" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1459,6 +1470,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#quick-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#mission" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1523,7 +1545,24 @@
 
 
 <h1 id="orchestration-engine">Orchestration Engine<a class="headerlink" href="#orchestration-engine" title="Permanent link">&para;</a></h1>
+<p><a href="https://pypi.org/project/orchestration-engine/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/orchestration-engine.svg" /></a>
+<a href="https://pypi.org/project/orchestration-engine/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/orchestration-engine.svg" /></a>
+<a href="https://github.com/Reddirector/Orchestration_Engine/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0-blue.svg" /></a>
+<a href="https://github.com/Reddirector/Orchestration_Engine/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/Reddirector/Orchestration_Engine.svg" /></a></p>
 <p>A fault-tolerant, dependency-aware workflow orchestration engine for Python. Define tasks, dependencies, retries, and timeouts declaratively; supply the logic for each task; the engine schedules, executes, retries, times out, cancels dependents of failures, and records every state transition.</p>
+<h2 id="quick-installation">Quick Installation<a class="headerlink" href="#quick-installation" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>orchestration-engine
+</code></pre></div>
+<p>For optional YAML workflow loading support:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"orchestration-engine[yaml]"</span>
+</code></pre></div></p>
+<blockquote>
+<p>[!TIP]
+<strong>Modern Linux (PEP 668):</strong> If installing on Ubuntu 23.04+, Debian 12+, or Fedora without a global pip environment, activate a virtual environment first:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pip<span class="w"> </span>install<span class="w"> </span>orchestration-engine
+</code></pre></div></p>
+</blockquote>
 <h2 id="mission">Mission<a class="headerlink" href="#mission" title="Permanent link">&para;</a></h2>
 <p>Multi-step automation pipelines—such as AI agent workflows, ETL transformations, and distributed tool executions—frequently encounter transient network drops, rate limits, and unhandled worker crashes. </p>
 <p><strong>Orchestration Engine</strong> is designed to provide robust, deterministic workflow management with:
