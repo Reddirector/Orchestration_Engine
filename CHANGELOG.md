@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-10-25
+## [0.9.0] - 2026-10-25
 
 ### Added
 - Complete production-grade release of Orchestration Engine with zero runtime dependencies.
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Behavior changes
 - Public API frozen to 25 symbols.
-- Development Status bumped to `5 - Production/Stable`.
+- Development Status set to `4 - Beta`.
 
 ## [0.6.0] - 2026-10-25
 

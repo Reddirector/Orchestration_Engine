@@ -23,7 +23,7 @@ logging.getLogger("orchestration_engine").addHandler(logging.NullHandler())
 try:
     __version__ = importlib.metadata.version("orchestration-engine")
 except importlib.metadata.PackageNotFoundError:
-    __version__ = "1.0.0"
+    __version__ = "0.9.0"
 
 __all__ = [
     "__version__",

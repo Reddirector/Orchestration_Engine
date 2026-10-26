@@ -206,7 +206,7 @@ wf_dict = workflow_to_dict(workflow)
 
 ## Real-World Use Cases
 
-The repository includes complete, runnable reference architectures in `examples/`:
+The repository includes runnable simulated pipeline examples (using clean stubs with zero external SDK dependencies) in `examples/`:
 
 - **[Multi-Step AI Agent Pipeline](examples/agent_pipeline.py)**: Orchestrates LLM tool calling, document retrieval, automated retries on transient API rate limits (`HTTP 429`), concurrent entity extraction, and fan-in executive summary synthesis.
 - **[RAG Knowledge Ingestion & Vector Indexing](examples/rag_document_indexer.py)**: Semantic document chunking, parallel embedding generation with transient backpressure handling, vector store upsert, and an automated quality evaluation gate.
@@ -241,6 +241,10 @@ See the complete [Use Cases Documentation](docs/use-cases.md) for architectural 
 | `WorkflowDefinitionError` | Raised on malformed workflow definitions (subclasses `ValueError`) |
 | `WorkflowValidationError` | Raised on invalid workflow DAG structure (subclasses `ValueError`) |
 | `PersistenceError` | Raised when persistence operations fail (wraps `sqlite3.Error`) |
+
+## Authorship & Development
+
+The v0.1 core was hand-crafted; Stages 2–7 were developed via autonomous AI agent pairing with human code review and strict automated quality gates.
 
 ## License
 

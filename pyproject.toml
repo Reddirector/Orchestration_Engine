@@ -1,6 +1,6 @@
 [project]
 name = "orchestration-engine"
-version = "1.0.0"
+version = "0.9.0"
 description = "A fault-tolerant workflow orchestration engine"
 readme = "README.md"
 authors = [
@@ -9,7 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = []
 license = "MIT OR Apache-2.0"
-license-files = ["LICENSE", "LICENSE-MIT", "CHANGELOG.md"]
+license-files = ["LICENSE", "LICENSE-MIT"]
 keywords = [
     "workflow",
     "orchestration",
@@ -21,7 +21,7 @@ keywords = [
     "task",
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
@@ -36,7 +36,6 @@ Homepage = "https://github.com/Reddirector/Orchestration_Engine"
 Repository = "https://github.com/Reddirector/Orchestration_Engine"
 Issues = "https://github.com/Reddirector/Orchestration_Engine/issues"
 Changelog = "https://github.com/Reddirector/Orchestration_Engine/blob/main/CHANGELOG.md"
-Documentation = "https://reddirector.github.io/Orchestration_Engine/"
 
 [project.optional-dependencies]
 yaml = ["pyyaml>=6.0"]
