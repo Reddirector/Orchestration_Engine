@@ -1,0 +1,2256 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A fault-tolerant, dependency-aware workflow orchestration engine for Python.">
+      
+      
+        <meta name="author" content="Reddirector">
+      
+      
+      
+        <link rel="prev" href="../final-verification/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Final Release Report - Orchestration Engine</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#orchestration-engine-final-project-report-100-release-documentation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Orchestration Engine" class="md-header__button md-logo" aria-label="Orchestration Engine" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Orchestration Engine
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Final Release Report
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Reddirector/Orchestration_Engine" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Reddirector/Orchestration_Engine
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Orchestration Engine" class="md-nav__button md-logo" aria-label="Orchestration Engine" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Orchestration Engine
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Reddirector/Orchestration_Engine" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Reddirector/Orchestration_Engine
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../use-cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Use Cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance & Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../limitations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/001-thread-pool-non-blocking-timeouts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 001: Thread Pool Timeouts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/002-exception-retry-and-last-error/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 002: Exception Retries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/003-error-hierarchy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 003: Error Hierarchy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/004-schema-v1-and-runs-table/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 004: Schema v1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/005-run-model-and-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 005: Run Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/006-resume-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 006: Resume Semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/007-task-vs-taskrun-representation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 007: Task Representation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/008-single-writer-coordinator-concurrency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 008: Concurrency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/009-data-flow-and-task-outputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 009: Data Flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/010-hooks-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 010: Lifecycle Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/011-workflow-builder-and-serializer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 011: Workflow Builder
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/012-json-schema-and-error-collection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 012: JSON Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/013-optional-yaml-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 013: YAML Support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/014-cli-and-structured-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 014: CLI Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quality Reports
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Quality Reports
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Baseline Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stage-2-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stage 2 Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stage-3-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stage 3 Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stage-4-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stage 4 Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stage-5-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stage 5 Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stage-6-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stage 6 Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../final-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final Verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final Release Report
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Final Release Report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-deliverables-commit-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Deliverables &amp; Commit Map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-final-quality-gate-test-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Final Quality Gate &amp; Test Coverage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Final Quality Gate &amp; Test Coverage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-quality-gate-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Quality Gate Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-coverage-breakdown-by-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Coverage Breakdown by Module
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-complete-list-of-behavior-changes-v010-to-v100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Complete List of Behavior Changes (v0.1.0 to v1.0.0)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-architectural-decision-records-adrs-master-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Architectural Decision Records (ADRs) Master Index
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-intentionally-out-of-scope-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Intentionally Out-of-Scope Items
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-known-technical-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Known Technical Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-manual-instructions-for-repository-owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Manual Instructions for Repository Owner
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Manual Instructions for Repository Owner">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-review-local-commits-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Review Local Commits &amp; Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-push-branch-and-tags-to-github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Push Branch and Tags to GitHub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-open-pull-request-on-github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Open Pull Request on GitHub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-fast-forward-main-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Fast-Forward main Locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-publish-to-pypi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Publish to PyPI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-deliverables-commit-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Deliverables &amp; Commit Map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-final-quality-gate-test-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Final Quality Gate &amp; Test Coverage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Final Quality Gate &amp; Test Coverage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-quality-gate-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Quality Gate Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-coverage-breakdown-by-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Coverage Breakdown by Module
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-complete-list-of-behavior-changes-v010-to-v100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Complete List of Behavior Changes (v0.1.0 to v1.0.0)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-architectural-decision-records-adrs-master-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Architectural Decision Records (ADRs) Master Index
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-intentionally-out-of-scope-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Intentionally Out-of-Scope Items
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-known-technical-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Known Technical Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-manual-instructions-for-repository-owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Manual Instructions for Repository Owner
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Manual Instructions for Repository Owner">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-review-local-commits-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Review Local Commits &amp; Tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-push-branch-and-tags-to-github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Push Branch and Tags to GitHub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-open-pull-request-on-github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Open Pull Request on GitHub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-fast-forward-main-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Fast-Forward main Locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-publish-to-pypi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Publish to PyPI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="orchestration-engine-final-project-report-100-release-documentation">Orchestration Engine — Final Project Report &amp; 1.0.0 Release Documentation<a class="headerlink" href="#orchestration-engine-final-project-report-100-release-documentation" title="Permanent link">&para;</a></h1>
+<p><strong>Project:</strong> <code>orchestration-engine</code><br />
+<strong>Target Release:</strong> <code>v1.0.0</code> (Production/Stable)<br />
+<strong>Branch:</strong> <code>stages-2-7</code><br />
+<strong>Repository:</strong> <code>https://github.com/Reddirector/Orchestration_Engine</code><br />
+<strong>Date:</strong> 2026-10-25  </p>
+<hr />
+<h2 id="1-executive-summary">1. Executive Summary<a class="headerlink" href="#1-executive-summary" title="Permanent link">&para;</a></h2>
+<p>The Orchestration Engine has progressed from an initial prototype (v0.1.0) through six complete stages of engineering, hardening, and verification to reach a release-ready <strong>v1.0.0</strong>. The engine is a lightweight, zero-runtime-dependency workflow scheduler and execution coordinator for Python 3.12+, designed especially for deterministic AI/agent pipelines and multi-step computational graphs.</p>
+<p>All work was completed autonomously according to specification, strictly preserving existing behaviors, writing characterization tests prior to any bug fixes, maintaining strict standard library purity, enforcing single-writer persistence invariants, freezing the public API to exactly 25 approved symbols, and reaching 91.45% line test coverage with zero flakes across repeated executions.</p>
+<hr />
+<h2 id="2-deliverables-commit-map">2. Deliverables &amp; Commit Map<a class="headerlink" href="#2-deliverables-commit-map" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Stage</th>
+<th style="text-align: left;">Deliverable</th>
+<th style="text-align: left;">Commit</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Stage 1</strong></td>
+<td style="text-align: left;">Pre-existing</td>
+<td style="text-align: left;"><code>246a4e3</code></td>
+<td style="text-align: left;">v0.1.0 base release</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Stage 2</strong></td>
+<td style="text-align: left;"><code>2.0</code></td>
+<td style="text-align: left;"><code>876658b</code></td>
+<td style="text-align: left;">Characterization tests for known gaps G1-G4, G11-G13</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.1</code></td>
+<td style="text-align: left;"><code>15f67cf</code></td>
+<td style="text-align: left;">Ruff check and Mypy strict zero-error baseline</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.2</code></td>
+<td style="text-align: left;"><code>1fa97ce</code></td>
+<td style="text-align: left;">Retry delay calculated from task failure finish timestamp</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.3</code></td>
+<td style="text-align: left;"><code>00242d9</code></td>
+<td style="text-align: left;">Non-blocking timeout via unpooled executor shutdown</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.4</code></td>
+<td style="text-align: left;"><code>a5d28b8</code></td>
+<td style="text-align: left;">Runner exceptions adhere to retry policy; <code>task.last_error</code> populated</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.5</code></td>
+<td style="text-align: left;"><code>a7f749c</code></td>
+<td style="text-align: left;">Default timeout 30s, optional workflow default, null support</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.6</code></td>
+<td style="text-align: left;"><code>a3b5c84</code></td>
+<td style="text-align: left;">Configurable database path via <code>get_connection</code> and runner signatures</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.7</code></td>
+<td style="text-align: left;"><code>fce0cc7</code></td>
+<td style="text-align: left;">Float seconds and strict numeric range validation</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.8</code></td>
+<td style="text-align: left;"><code>68ec630</code></td>
+<td style="text-align: left;">Structured <code>OrchestrationError</code> hierarchy with clear subclasses</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.9</code></td>
+<td style="text-align: left;"><code>a5a0e72</code></td>
+<td style="text-align: left;">Documentation sync and GitHub issue templates</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.10</code></td>
+<td style="text-align: left;"><code>c1181b8</code></td>
+<td style="text-align: left;">GitHub Actions CI workflow and local <code>scripts/gate.sh</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>2.11</code></td>
+<td style="text-align: left;"><code>56b7fab</code></td>
+<td style="text-align: left;">Release v0.2.0 (tag <code>stage-2-done</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Stage 3</strong></td>
+<td style="text-align: left;"><code>3.1</code></td>
+<td style="text-align: left;"><code>322ef84</code></td>
+<td style="text-align: left;">Schema v1 with <code>runs</code> table and automatic migration</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>3.2</code></td>
+<td style="text-align: left;"><code>db76de7</code></td>
+<td style="text-align: left;">SQLite connection hardening: WAL mode, busy timeout, foreign keys</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>3.3</code></td>
+<td style="text-align: left;"><code>284e757</code></td>
+<td style="text-align: left;"><code>run_id</code> plumbing across all events and runs tracking</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>3.4</code></td>
+<td style="text-align: left;"><code>46011fe</code></td>
+<td style="text-align: left;">Status and history query directly from database</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>3.5</code></td>
+<td style="text-align: left;"><code>39dcc1c</code></td>
+<td style="text-align: left;">Database as single source of truth; memory mirrors synced</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>3.6</code></td>
+<td style="text-align: left;"><code>02f5daf</code></td>
+<td style="text-align: left;"><code>resume_run</code> with task state restoration and running recovery</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>3.7</code></td>
+<td style="text-align: left;"><code>b9d50a4</code></td>
+<td style="text-align: left;">Subprocess SIGKILL crash-and-resume integration test</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>3.8</code></td>
+<td style="text-align: left;"><code>1bde985</code></td>
+<td style="text-align: left;">Release v0.3.0 (tag <code>stage-3-done</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Stage 4</strong></td>
+<td style="text-align: left;"><code>4.1</code></td>
+<td style="text-align: left;"><code>31cf9f0</code></td>
+<td style="text-align: left;">Single-writer coordinator architecture &amp; concurrency parameters</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>4.2</code></td>
+<td style="text-align: left;"><code>048d09a</code></td>
+<td style="text-align: left;">Single-writer coordinator loop with ThreadPoolExecutor</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>4.3</code></td>
+<td style="text-align: left;"><code>b2c3300</code></td>
+<td style="text-align: left;">Process executor backend with spawn, timeout SIGKILL, IPC pipes</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>4.4</code></td>
+<td style="text-align: left;"><code>fabd687</code></td>
+<td style="text-align: left;">Deterministic <code>_inline</code> executor for fast virtual-clock tests</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>4.5</code></td>
+<td style="text-align: left;"><code>d6eaf71</code></td>
+<td style="text-align: left;">Concurrency and process executor test suite (20x flake-free)</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>4.6</code></td>
+<td style="text-align: left;"><code>c8d4aa8</code></td>
+<td style="text-align: left;">Release v0.4.0 (tag <code>stage-4-done</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Stage 5</strong></td>
+<td style="text-align: left;"><code>5.1</code></td>
+<td style="text-align: left;"><code>1aa0baa</code></td>
+<td style="text-align: left;"><code>TaskResult</code>, upstream <code>task.inputs</code>, schema v2 <code>task_outputs</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>5.2</code></td>
+<td style="text-align: left;"><code>ce2f09b</code></td>
+<td style="text-align: left;">Lifecycle <code>Hooks</code> and safe coordinator event callbacks</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>5.3</code></td>
+<td style="text-align: left;"><code>28e7956</code></td>
+<td style="text-align: left;"><code>WorkflowBuilder</code> fluent API and <code>workflow_to_dict</code> serializer</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>5.4</code></td>
+<td style="text-align: left;"><code>6c82f8e</code></td>
+<td style="text-align: left;"><code>workflow.schema.json</code> packaged &amp; <code>collect_errors</code> loader mode</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>5.5</code></td>
+<td style="text-align: left;"><code>5d77ab9</code></td>
+<td style="text-align: left;">Optional YAML workflow loader via PyYAML optional extra</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>5.6</code></td>
+<td style="text-align: left;"><code>3ec44bf</code></td>
+<td style="text-align: left;">Release v0.5.0 (tag <code>stage-5-done</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Stage 6</strong></td>
+<td style="text-align: left;"><code>6.1</code></td>
+<td style="text-align: left;"><code>74befc3</code></td>
+<td style="text-align: left;">Standard library CLI implementation with console scripts</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>6.2</code></td>
+<td style="text-align: left;"><code>99d32be</code></td>
+<td style="text-align: left;">CLI contract, stable JSON schemas, dynamic runner resolution</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>6.3</code></td>
+<td style="text-align: left;"><code>249384a</code></td>
+<td style="text-align: left;">Structured logging with <code>logging.NullHandler()</code> on library logger</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>6.4</code></td>
+<td style="text-align: left;"><code>5dc6bb0</code></td>
+<td style="text-align: left;">Comprehensive CLI test suite and subprocess smoke tests</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>6.5</code></td>
+<td style="text-align: left;"><code>b4346d9</code></td>
+<td style="text-align: left;">Release v0.6.0 (tag <code>stage-6-done</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Stage 7</strong></td>
+<td style="text-align: left;"><code>7.1</code></td>
+<td style="text-align: left;"><code>a0c8dcb</code></td>
+<td style="text-align: left;">MkDocs Material documentation site (strict build passing)</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>7.2</code></td>
+<td style="text-align: left;"><code>00ef822</code></td>
+<td style="text-align: left;">Multi-step AI agent pipeline example (<code>examples/agent_pipeline.py</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>7.3</code></td>
+<td style="text-align: left;"><code>1384db3</code></td>
+<td style="text-align: left;">Benchmark suite &amp; performance report (<code>docs/performance.md</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>7.4</code></td>
+<td style="text-align: left;"><code>da50baa</code></td>
+<td style="text-align: left;">Security audit, DoS limits, and parameterized query review</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>7.5</code></td>
+<td style="text-align: left;"><code>372378f</code></td>
+<td style="text-align: left;">Public API freeze (25 symbols) and policy docs (<code>docs/policy.md</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>7.6</code></td>
+<td style="text-align: left;"><code>9531533</code></td>
+<td style="text-align: left;">Package metadata, release workflow, and verification script</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>7.7</code></td>
+<td style="text-align: left;"><code>c1a845b</code></td>
+<td style="text-align: left;">Final verification gate (flakeless concurrency and clean install)</td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"><code>7.8</code></td>
+<td style="text-align: left;"><code>f8e8a0e</code></td>
+<td style="text-align: left;">Release candidate 1.0.0 (tag <code>stage-7-done</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-final-quality-gate-test-coverage">3. Final Quality Gate &amp; Test Coverage<a class="headerlink" href="#3-final-quality-gate-test-coverage" title="Permanent link">&para;</a></h2>
+<h3 id="31-quality-gate-execution">3.1 Quality Gate Execution<a class="headerlink" href="#31-quality-gate-execution" title="Permanent link">&para;</a></h3>
+<p>Executing <code>bash scripts/gate.sh</code>:
+- <strong>Ruff:</strong> All checks passed (100% formatted and linted).
+- <strong>Mypy:</strong> Strict type checking passed on 35 source files with 0 errors.
+- <strong>Pytest:</strong> 157 passed in 6.87s.
+- <strong>Line Coverage:</strong> 91.45% (exceeds the 90.0% threshold).
+- <strong>Package Build:</strong> Wheel (<code>.whl</code>) and Source Distribution (<code>.tar.gz</code>) generated cleanly with zero PEP 639 warnings.
+- <strong>Clean Venv Isolation:</strong> Fresh venv in <code>/tmp</code> successfully installed wheel, verified all 25 exports in <code>__all__</code>, ran all 6 example scripts, and exercised CLI binary.</p>
+<h3 id="32-coverage-breakdown-by-module">3.2 Coverage Breakdown by Module<a class="headerlink" href="#32-coverage-breakdown-by-module" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Name                                      Stmts   Miss  Cover
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>-------------------------------------------------------------
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>src/orchestration_engine/__init__.py         15      2    87%
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>src/orchestration_engine/__main__.py          4      0   100%
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>src/orchestration_engine/builder.py          39      0   100%
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>src/orchestration_engine/cli.py             246     23    91%
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>src/orchestration_engine/errors.py            7      0   100%
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>src/orchestration_engine/executor.py         37      4    89%
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>src/orchestration_engine/loader.py          143      6    96%
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>src/orchestration_engine/models.py           54      0   100%
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>src/orchestration_engine/persistence.py      96      8    92%
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>src/orchestration_engine/readiness.py        57      4    93%
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>src/orchestration_engine/runner.py          336     51    85%
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>src/orchestration_engine/scheduler.py        13      0   100%
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>src/orchestration_engine/status.py           35      1    97%
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>src/orchestration_engine/transitions.py      36      0   100%
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>src/orchestration_engine/validation.py       52      1    98%
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>-------------------------------------------------------------
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>TOTAL                                      1170    100    91%
+</code></pre></div>
+<hr />
+<h2 id="4-complete-list-of-behavior-changes-v010-to-v100">4. Complete List of Behavior Changes (v0.1.0 to v1.0.0)<a class="headerlink" href="#4-complete-list-of-behavior-changes-v010-to-v100" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Retry Delay Formula:</strong> Delay is calculated relative to the finish timestamp of the failed attempt (<code>attempt_finish_time + delay</code>), preventing instantaneous retries on long-running tasks.</li>
+<li><strong>Exception Handling:</strong> Unhandled exceptions raised by a task runner are caught, recorded in <code>task.last_error</code>, and handled according to <code>RetryPolicy</code> rather than immediately crashing the workflow coordinator.</li>
+<li><strong>Non-blocking Thread Timeouts:</strong> Task timeouts terminate execution coordinator wait time without holding the coordinator thread blocked.</li>
+<li><strong>Timeout Defaults:</strong> Tasks without explicit <code>timeout_seconds</code> inherit <code>workflow.default_timeout_seconds</code> (defaulting to 30.0s). Explicit <code>None</code> disables task timeout.</li>
+<li><strong>Transitive Cancellation:</strong> If task A fails permanently, all downstream dependents (direct and indirect) transition to <code>CANCELLED</code> within a single scheduling pass.</li>
+<li><strong>Persistence Single Source of Truth:</strong> <code>task_states</code> dictionary is now a read-only backwards-compatible mirror; the SQLite event log is the authoritative source of truth.</li>
+<li><strong>Crash Resume Semantics:</strong> Incomplete runs can be safely resumed via <code>resume_run(conn, run_id, ...)</code>. Interrupted tasks in <code>RUNNING</code> or <code>RETRY_WAIT</code> state are recovered to <code>READY</code> or re-scheduled.</li>
+<li><strong>Multi-Thread &amp; Multi-Process Concurrency:</strong> Workflows can execute independent tasks concurrently (<code>max_concurrency &gt; 1</code>) using threads or isolated spawned child processes (<code>multiprocessing</code>).</li>
+<li><strong>Data Flow &amp; Task Outputs:</strong> Tasks can return <code>TaskResult(ok=True, output=data)</code>. Output is persisted in SQLite <code>task_outputs</code> table and passed to downstream tasks via <code>task.inputs = {dep_id: output}</code>.</li>
+<li><strong>Lifecycle Hooks:</strong> User-provided callbacks (<code>Hooks</code>) trigger on state transitions. Any exceptions inside hooks are caught and logged without aborting task scheduling.</li>
+<li><strong>Security Limits:</strong> Added maximum file size protection (10 MB), maximum task count (5,000 tasks), and maximum dependency count (500 per task) to guard against resource exhaustion.</li>
+<li><strong>CLI Contract:</strong> Introduced command-line utility <code>orchestration-engine</code> with strict exit codes (0, 1, 2, 3) and machine-readable JSON mode.</li>
+</ol>
+<hr />
+<h2 id="5-architectural-decision-records-adrs-master-index">5. Architectural Decision Records (ADRs) Master Index<a class="headerlink" href="#5-architectural-decision-records-adrs-master-index" title="Permanent link">&para;</a></h2>
+<p>All architectural choices are recorded in <code>docs/decisions/</code>:
+- <strong>ADR 001:</strong> <code>docs/decisions/001-thread-pool-non-blocking-timeouts.md</code> — Non-blocking timeouts via unpooled executor shutdown.
+- <strong>ADR 002:</strong> <code>docs/decisions/002-exception-retry-and-last-error.md</code> — Runner exception capture and retry semantics.
+- <strong>ADR 003:</strong> <code>docs/decisions/003-error-hierarchy.md</code> — Domain error hierarchy rooted at <code>OrchestrationError</code>.
+- <strong>ADR 004:</strong> <code>docs/decisions/004-schema-v1-and-runs-table.md</code> — Relational schema versioning and <code>runs</code> tracking.
+- <strong>ADR 005:</strong> <code>docs/decisions/005-run-model-and-lifecycle.md</code> — Immutable run identification and lifecycle status.
+- <strong>ADR 006:</strong> <code>docs/decisions/006-resume-semantics.md</code> — Crash recovery and idempotent resume execution.
+- <strong>ADR 007:</strong> <code>docs/decisions/007-task-vs-taskrun-representation.md</code> — Task definition decoupling from run execution states.
+- <strong>ADR 008:</strong> <code>docs/decisions/008-single-writer-coordinator-concurrency.md</code> — Single-writer coordinator architecture for concurrent tasks.
+- <strong>ADR 009:</strong> <code>docs/decisions/009-data-flow-and-task-outputs.md</code> — <code>TaskResult</code> contract, output persistence, and upstream injection.
+- <strong>ADR 010:</strong> <code>docs/decisions/010-hooks-lifecycle.md</code> — Non-blocking post-persistence lifecycle hooks.
+- <strong>ADR 011:</strong> <code>docs/decisions/011-workflow-builder-and-serializer.md</code> — Fluent <code>WorkflowBuilder</code> and dictionary round-trip.
+- <strong>ADR 012:</strong> <code>docs/decisions/012-json-schema-and-error-collection.md</code> — Packaged JSON Schema and multi-error validation.
+- <strong>ADR 013:</strong> <code>docs/decisions/013-optional-yaml-support.md</code> — Zero-dependency core with optional PyYAML loader.
+- <strong>ADR 014:</strong> <code>docs/decisions/014-cli-and-structured-logging.md</code> — Standard library CLI contract and NullHandler logging.</p>
+<hr />
+<h2 id="6-intentionally-out-of-scope-items">6. Intentionally Out-of-Scope Items<a class="headerlink" href="#6-intentionally-out-of-scope-items" title="Permanent link">&para;</a></h2>
+<p>To preserve the engine's core promise of zero runtime dependencies, minimal surface area, and rock-solid durability, the following capabilities are explicitly out of scope for v1.0.0:
+1. <strong>Distributed Multi-Node Execution:</strong> No distributed worker pools (e.g. Celery, Ray, Kubernetes). All concurrency is single-node multi-thread or multi-process.
+2. <strong>External Message Brokers / Databases:</strong> No dependency on Redis, RabbitMQ, Kafka, or PostgreSQL. Persistence is strictly standard library SQLite.
+3. <strong>Web UI / Graphical Dashboard:</strong> No bundled web server (e.g. Flask, FastAPI, React). Monitoring is accomplished via SQLite queries, the CLI (<code>orchestration-engine status / history</code>), or application logs.
+4. <strong>Dynamic DAG Mutation at Runtime:</strong> The task graph is fully declared before execution starts; dynamic graph topology expansion during run execution is not supported.</p>
+<hr />
+<h2 id="7-known-technical-limitations">7. Known Technical Limitations<a class="headerlink" href="#7-known-technical-limitations" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Thread Backend Cancellation:</strong> The <code>executor="thread"</code> backend uses standard Python <code>concurrent.futures.ThreadPoolExecutor</code>. In Python, running native threads cannot be forcefully terminated from the outside. When a threaded task times out, the engine stops waiting and proceeds with workflow scheduling, but the worker thread will run until completion or interpreter exit. For tasks that must be forcefully terminated on timeout, use <code>executor="process"</code>.</li>
+<li><strong>SQLite Single-Writer Concurrency:</strong> While SQLite in WAL mode permits concurrent readers, it enforces a single writer lock. Under the single-writer coordinator pattern, this is completely safe within an engine instance. Multiple independent processes pointing to the exact same SQLite database file should rely on the configured <code>busy_timeout</code> (default 5000ms).</li>
+</ol>
+<hr />
+<h2 id="8-manual-instructions-for-repository-owner">8. Manual Instructions for Repository Owner<a class="headerlink" href="#8-manual-instructions-for-repository-owner" title="Permanent link">&para;</a></h2>
+<p>As instructed, no <code>git push</code>, <code>uv publish</code>, or remote changes were performed by the agent. The branch <code>stages-2-7</code> is completely verified, committed, and tagged locally.</p>
+<p>Follow these steps to complete the release:</p>
+<h3 id="step-1-review-local-commits-tags">Step 1: Review Local Commits &amp; Tags<a class="headerlink" href="#step-1-review-local-commits-tags" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>~/Desktop/Orchestration<span class="se">\ </span>engine
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git<span class="w"> </span>status
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>git<span class="w"> </span>log<span class="w"> </span>--oneline<span class="w"> </span>main..stages-2-7
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>git<span class="w"> </span>tag<span class="w"> </span>-l
+</code></pre></div>
+<h3 id="step-2-push-branch-and-tags-to-github">Step 2: Push Branch and Tags to GitHub<a class="headerlink" href="#step-2-push-branch-and-tags-to-github" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>stages-2-7
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>--tags
+</code></pre></div>
+<h3 id="step-3-open-pull-request-on-github">Step 3: Open Pull Request on GitHub<a class="headerlink" href="#step-3-open-pull-request-on-github" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Navigate to <code>https://github.com/Reddirector/Orchestration_Engine/compare/main...stages-2-7</code>.</li>
+<li>Title: <code>Release 1.0.0: Production-Ready Orchestration Engine</code>.</li>
+<li>Description: Reference <code>docs/reports/FINAL-REPORT.md</code>.</li>
+<li>Review diff and merge PR into <code>main</code>.</li>
+</ol>
+<h3 id="step-4-fast-forward-main-locally">Step 4: Fast-Forward <code>main</code> Locally<a class="headerlink" href="#step-4-fast-forward-main-locally" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>main
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git<span class="w"> </span>pull<span class="w"> </span>origin<span class="w"> </span>main
+</code></pre></div>
+<h3 id="step-5-publish-to-pypi">Step 5: Publish to PyPI<a class="headerlink" href="#step-5-publish-to-pypi" title="Permanent link">&para;</a></h3>
+<p>If using GitHub Actions Trusted Publishing (configured in <code>.github/workflows/release.yml</code>):
+- Create a GitHub Release pointing to tag <code>stage-7-done</code> (or create a <code>v1.0.0</code> tag). The workflow will automatically build and publish to PyPI.</p>
+<p>If publishing manually with uv:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>build
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>uv<span class="w"> </span>publish
+</code></pre></div></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>
