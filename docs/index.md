@@ -1,6 +1,29 @@
 # Orchestration Engine
 
+[![PyPI version](https://img.shields.io/pypi/v/orchestration-engine.svg)](https://pypi.org/project/orchestration-engine/)
+[![Python versions](https://img.shields.io/pypi/pyversions/orchestration-engine.svg)](https://pypi.org/project/orchestration-engine/)
+[![License](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0-blue.svg)](https://github.com/Reddirector/Orchestration_Engine/blob/main/LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/Reddirector/Orchestration_Engine.svg)](https://github.com/Reddirector/Orchestration_Engine/releases)
+
 A fault-tolerant, dependency-aware workflow orchestration engine for Python. Define tasks, dependencies, retries, and timeouts declaratively; supply the logic for each task; the engine schedules, executes, retries, times out, cancels dependents of failures, and records every state transition.
+
+## Quick Installation
+
+```bash
+pip install orchestration-engine
+```
+
+For optional YAML workflow loading support:
+```bash
+pip install "orchestration-engine[yaml]"
+```
+
+> [!TIP]
+> **Modern Linux (PEP 668):** If installing on Ubuntu 23.04+, Debian 12+, or Fedora without a global pip environment, activate a virtual environment first:
+> ```bash
+> python3 -m venv .venv && source .venv/bin/activate
+> pip install orchestration-engine
+> ```
 
 ## Mission
 

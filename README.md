@@ -31,6 +31,13 @@ For optional YAML workflow loading support (`load_workflow_from_yaml`):
 pip install "orchestration-engine[yaml]"
 ```
 
+> **Note for Linux users (PEP 668):** If your Linux distribution (Ubuntu 23.04+, Debian 12+) manages Python packages externally, activate a virtual environment first:
+> ```bash
+> python3 -m venv .venv && source .venv/bin/activate
+> pip install orchestration-engine
+> ```
+> Or install using `uv pip install orchestration-engine` or `pipx install orchestration-engine`.
+
 ## Quickstart
 
 Define a workflow as JSON — two tasks, the second depending on the first:
