@@ -1,6 +1,6 @@
 site_name: Orchestration Engine
 site_description: A fault-tolerant, dependency-aware workflow orchestration engine for Python.
-site_author: Reddirector
+site_author: Aditya Kumar
 repo_url: https://github.com/Reddirector/Orchestration_Engine
 repo_name: Reddirector/Orchestration_Engine
 

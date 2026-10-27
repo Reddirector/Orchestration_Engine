@@ -2,7 +2,7 @@
 
 ## Reporting Vulnerabilities
 
-If you discover a security vulnerability within `orchestration-engine`, please do **not** open a public issue. Instead, report it privately to the repository owner via GitHub Security Advisories or by contacting `aditya@reddirector.com`.
+If you discover a security vulnerability within `orchestration-engine`, please do **not** open a public issue. Instead, report it privately to the repository owner via GitHub Security Advisories or by contacting `adityakumarks2008@gmail.com`.
 
 All reports will be acknowledged within 48 hours, and a security fix or advisory will be issued promptly.
 

@@ -260,9 +260,10 @@ See the complete [Use Cases Documentation](docs/use-cases.md) for architectural 
 | `WorkflowValidationError` | Raised on invalid workflow DAG structure (subclasses `ValueError`) |
 | `PersistenceError` | Raised when persistence operations fail (wraps `sqlite3.Error`) |
 
-## Authorship & Development
+## Authorship & Contact
 
-The v0.1 core was hand-crafted; Stages 2–7 were developed via autonomous AI agent pairing with human code review and strict automated quality gates.
+- **Author / Maintainer:** Aditya Kumar ([adityakumarks2008@gmail.com](mailto:adityakumarks2008@gmail.com))
+- **Development History:** The v0.1 core was hand-crafted; Stages 2–7 were developed via autonomous AI agent pairing with human code review and strict automated quality gates.
 
 ## License
 
