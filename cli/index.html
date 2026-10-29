@@ -619,6 +619,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#7-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-dlq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. dlq
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. trace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. signal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1654,6 +1698,50 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#7-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-dlq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. dlq
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. trace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. signal
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1858,10 +1946,69 @@ Specifying <code>--runner</code> dynamically imports Python code via <code>impor
 <a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="p">]</span>
 </code></pre></div></p>
 <hr />
+<h3 id="7-plan">7. <code>plan</code><a class="headerlink" href="#7-plan" title="Permanent link">&para;</a></h3>
+<p>Analyzes workflow structure and computes topological execution stages, critical path, and maximum parallelism without executing side effects.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>orchestration-engine<span class="w"> </span>plan<span class="w"> </span>&lt;file&gt;<span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
+</code></pre></div>
+<ul>
+<li><code>&lt;file&gt;</code>: (Required) Path to the workflow JSON or YAML file.</li>
+<li><code>--json</code>: Format the execution plan output as structured JSON.</li>
+</ul>
+<p><strong>Example:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>orchestration-engine<span class="w"> </span>plan<span class="w"> </span>workflow.json
+</code></pre></div></p>
+<p><strong>Output:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>Workflow: etl-pipeline
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>Total Tasks: 8
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>Max Parallelism: 4 concurrent workers
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>Critical Path: extract -&gt; chunk -&gt; embed -&gt; index
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>Execution Stages:
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>  Stage 0: extract
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>  Stage 1: chunk_a, chunk_b, chunk_c, chunk_d
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>  Stage 2: embed
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>  Stage 3: index
+</code></pre></div></p>
+<hr />
+<h3 id="8-dlq">8. <code>dlq</code><a class="headerlink" href="#8-dlq" title="Permanent link">&para;</a></h3>
+<p>Inspects and manages the persistent Dead Letter Queue (DLQ) for failed tasks.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>orchestration-engine<span class="w"> </span>dlq<span class="w"> </span>&lt;list<span class="p">|</span>purge&gt;<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>&lt;path&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--workflow<span class="w"> </span>&lt;id&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--limit<span class="w"> </span>&lt;n&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--older-than<span class="w"> </span>&lt;sec&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
+</code></pre></div>
+<ul>
+<li><code>list</code>: View captured task failure messages, stack traces, and input payloads.</li>
+<li><code>purge</code>: Delete captured failure messages matching filters.</li>
+<li><code>--db</code>: Path to the SQLite database (defaults to <code>orchestration.db</code>).</li>
+<li><code>--workflow</code>: Filter messages by workflow identifier.</li>
+<li><code>--limit</code>: Maximum number of messages to list (default: 50).</li>
+<li><code>--older-than</code>: Purge messages older than $N$ seconds.</li>
+<li><code>--json</code>: Output as structured JSON.</li>
+</ul>
+<hr />
+<h3 id="9-trace">9. <code>trace</code><a class="headerlink" href="#9-trace" title="Permanent link">&para;</a></h3>
+<p>Exports run execution spans into Google Chrome Trace Event Format (compatible with <code>chrome://tracing</code> and <a href="https://ui.perfetto.dev">Perfetto UI</a>).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>orchestration-engine<span class="w"> </span>trace<span class="w"> </span>&lt;run_id&gt;<span class="w"> </span>--db<span class="w"> </span>&lt;path&gt;<span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>trace.json<span class="o">]</span>
+</code></pre></div>
+<ul>
+<li><code>run_id</code>: Workflow run identifier.</li>
+<li><code>--db</code>: Path to the SQLite database.</li>
+<li><code>-o, --output</code>: Optional output JSON file path (defaults to stdout).</li>
+</ul>
+<hr />
+<h3 id="10-signal">10. <code>signal</code><a class="headerlink" href="#10-signal" title="Permanent link">&para;</a></h3>
+<p>Delivers a human-in-the-loop approval or external webhook payload to a workflow run.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>orchestration-engine<span class="w"> </span>signal<span class="w"> </span>&lt;run_id&gt;<span class="w"> </span>&lt;signal_name&gt;<span class="w"> </span><span class="o">[</span>--payload<span class="w"> </span>&lt;json&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>&lt;path&gt;<span class="o">]</span>
+</code></pre></div>
+<ul>
+<li><code>run_id</code>: Workflow run identifier.</li>
+<li><code>signal_name</code>: Identifier of the signal (e.g. <code>approval</code>, <code>webhook</code>, <code>review</code>).</li>
+<li><code>--payload</code>: JSON payload string (defaults to <code>{}</code>).</li>
+<li><code>--db</code>: Path to the SQLite database.</li>
+</ul>
+<hr />
 <h2 id="observability-logging">Observability &amp; Logging<a class="headerlink" href="#observability-logging" title="Permanent link">&para;</a></h2>
 <p>By default, the <code>orchestration_engine</code> library attaches a <code>NullHandler</code> to avoid hijacking parent application logs.</p>
 <p>When running via the CLI, use the <code>--log-level</code> flag to enable structured standard logging:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>orchestration-engine<span class="w"> </span>--log-level<span class="w"> </span>INFO<span class="w"> </span>run<span class="w"> </span>examples/simple_workflow.json<span class="w"> </span>--runner<span class="w"> </span>examples.runners:run
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>orchestration-engine<span class="w"> </span>--log-level<span class="w"> </span>INFO<span class="w"> </span>run<span class="w"> </span>examples/simple_workflow.json<span class="w"> </span>--runner<span class="w"> </span>examples.runners:run
 </code></pre></div>
 <p>Supported log levels: <code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code>.</p>
 <p>Structured log events emit structured <code>extra</code> fields:
