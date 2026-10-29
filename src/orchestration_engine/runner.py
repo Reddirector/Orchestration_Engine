@@ -333,11 +333,12 @@ def _run_coordinator_inline(
             continue
 
         for task in ready_tasks:
-            task.inputs = {
+            dep_inputs = {
                 dep: run_outputs[dep]
                 for dep in task.dependencies
                 if dep in run_outputs
             }
+            task.inputs = {**task.inputs, **dep_inputs}
             execute_task(task, conn, current_time)
             if hooks:
                 _safe_call_hook(hooks.on_task_start, task)
@@ -433,11 +434,12 @@ def _run_coordinator_thread(
             to_dispatch = dispatchable[: max(0, slots)]
 
             for task in to_dispatch:
-                task.inputs = {
+                dep_inputs = {
                     dep: run_outputs[dep]
                     for dep in task.dependencies
                     if dep in run_outputs
                 }
+                task.inputs = {**task.inputs, **dep_inputs}
                 execute_task(task, conn, current_time)
                 if hooks:
                     _safe_call_hook(hooks.on_task_start, task)
@@ -623,11 +625,12 @@ def _run_coordinator_process(
             to_dispatch = dispatchable[: max(0, slots)]
 
             for task in to_dispatch:
-                task.inputs = {
+                dep_inputs = {
                     dep: run_outputs[dep]
                     for dep in task.dependencies
                     if dep in run_outputs
                 }
+                task.inputs = {**task.inputs, **dep_inputs}
                 execute_task(task, conn, current_time)
                 if hooks:
                     _safe_call_hook(hooks.on_task_start, task)

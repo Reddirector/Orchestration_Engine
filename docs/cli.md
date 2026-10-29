@@ -195,6 +195,85 @@ orchestration-engine runs --db <path> [--workflow <workflow_id>] [--json]
 
 ---
 
+### 7. `plan`
+
+Analyzes workflow structure and computes topological execution stages, critical path, and maximum parallelism without executing side effects.
+
+```bash
+orchestration-engine plan <file> [--json]
+```
+
+- `<file>`: (Required) Path to the workflow JSON or YAML file.
+- `--json`: Format the execution plan output as structured JSON.
+
+**Example:**
+```bash
+orchestration-engine plan workflow.json
+```
+
+**Output:**
+```
+Workflow: etl-pipeline
+Total Tasks: 8
+Max Parallelism: 4 concurrent workers
+Critical Path: extract -> chunk -> embed -> index
+
+Execution Stages:
+  Stage 0: extract
+  Stage 1: chunk_a, chunk_b, chunk_c, chunk_d
+  Stage 2: embed
+  Stage 3: index
+```
+
+---
+
+### 8. `dlq`
+
+Inspects and manages the persistent Dead Letter Queue (DLQ) for failed tasks.
+
+```bash
+orchestration-engine dlq <list|purge> [--db <path>] [--workflow <id>] [--limit <n>] [--older-than <sec>] [--json]
+```
+
+- `list`: View captured task failure messages, stack traces, and input payloads.
+- `purge`: Delete captured failure messages matching filters.
+- `--db`: Path to the SQLite database (defaults to `orchestration.db`).
+- `--workflow`: Filter messages by workflow identifier.
+- `--limit`: Maximum number of messages to list (default: 50).
+- `--older-than`: Purge messages older than $N$ seconds.
+- `--json`: Output as structured JSON.
+
+---
+
+### 9. `trace`
+
+Exports run execution spans into Google Chrome Trace Event Format (compatible with `chrome://tracing` and [Perfetto UI](https://ui.perfetto.dev)).
+
+```bash
+orchestration-engine trace <run_id> --db <path> [-o trace.json]
+```
+
+- `run_id`: Workflow run identifier.
+- `--db`: Path to the SQLite database.
+- `-o, --output`: Optional output JSON file path (defaults to stdout).
+
+---
+
+### 10. `signal`
+
+Delivers a human-in-the-loop approval or external webhook payload to a workflow run.
+
+```bash
+orchestration-engine signal <run_id> <signal_name> [--payload <json>] [--db <path>]
+```
+
+- `run_id`: Workflow run identifier.
+- `signal_name`: Identifier of the signal (e.g. `approval`, `webhook`, `review`).
+- `--payload`: JSON payload string (defaults to `{}`).
+- `--db`: Path to the SQLite database.
+
+---
+
 ## Observability & Logging
 
 By default, the `orchestration_engine` library attaches a `NullHandler` to avoid hijacking parent application logs.

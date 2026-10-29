@@ -2,9 +2,10 @@ import json
 import logging
 import os
 import sqlite3
+import time
 from typing import Any
 
-from orchestration_engine.errors import PersistenceError
+from orchestration_engine.errors import OrchestrationError, PersistenceError
 
 logger = logging.getLogger("orchestration_engine")
 
@@ -321,3 +322,74 @@ def list_runs(
             """
         )
     return cursor.fetchall()
+
+
+def force_complete_task(
+    conn: sqlite3.Connection,
+    run_id: str,
+    task_id: str,
+    output: Any = None,
+    reason: str = "Force completed by AI",
+) -> None:
+    """
+    Force/false-complete a task by overriding its state to succeeded with synthetic output.
+
+    Useful for AI-assisted human intervention, self-healing, and simulated completion.
+    """
+    _migrate_database(conn)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT workflow_id FROM runs WHERE run_id = ?", (run_id,))
+    row = cursor.fetchone()
+    if not row:
+        raise OrchestrationError(f"Run '{run_id}' not found.")
+    wf_id = row[0]
+
+    # Get latest state and attempt count
+    cursor.execute(
+        """
+        SELECT new_state, attempt_count FROM task_events
+        WHERE run_id = ? AND task_id = ?
+        ORDER BY id DESC LIMIT 1
+        """,
+        (run_id, task_id),
+    )
+    ev_row = cursor.fetchone()
+    old_state = ev_row[0] if ev_row else "pending"
+    attempts = (ev_row[1] if ev_row else 0) + 1
+
+    now = time.time()
+    effective_output = (
+        output
+        if output is not None
+        else {
+            "completed_by": "ai_fallback",
+            "simulated": True,
+            "reason": reason,
+            "timestamp": now,
+        }
+    )
+    payload_str = json.dumps(effective_output)
+
+    # 1. Insert transition event to succeeded
+    conn.execute(
+        """
+        INSERT INTO task_events
+        (run_id, workflow_id, task_id, old_state, new_state, timestamp, attempt_count, error)
+        VALUES (?, ?, ?, ?, 'succeeded', ?, ?, NULL)
+        """,
+        (run_id, wf_id, task_id, old_state, now, attempts),
+    )
+
+    # 2. Insert/replace output in task_outputs
+    conn.execute(
+        """
+        INSERT INTO task_outputs (run_id, task_id, output_json, error)
+        VALUES (?, ?, ?, NULL)
+        ON CONFLICT(run_id, task_id) DO UPDATE SET output_json = ?, error = NULL
+        """,
+        (run_id, task_id, payload_str, payload_str),
+    )
+
+    conn.commit()
+    logger.info("Task '%s' in run '%s' was force-completed by AI: %s", task_id, run_id, reason)

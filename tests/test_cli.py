@@ -626,3 +626,91 @@ def test_main_module_execution() -> None:
         runpy.run_module("orchestration_engine", run_name="__main__")
     assert exc.value.code == 0
 
+
+def test_cli_trace_and_signal(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    db_path = str(tmp_path / "cli_extra.db")
+    conn = get_connection(db_path)
+    conn.execute(
+        "INSERT INTO runs (run_id, workflow_id, started_at, finished_at, status, definition_json) "
+        "VALUES ('run-trace-1', 'wf-trace', 100.0, 102.0, 'succeeded', '{}')"
+    )
+    conn.commit()
+
+    # trace stdout
+    exit_code = main(["trace", "run-trace-1", "--db", db_path])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "traceEvents" in out
+
+    # trace file output
+    out_file = str(tmp_path / "trace.json")
+    exit_code = main(["trace", "run-trace-1", "--db", db_path, "-o", out_file])
+    assert exit_code == 0
+    assert Path(out_file).exists()
+
+    # signal command
+    exit_code = main(
+        ["signal", "run-trace-1", "approve", "--payload", '{"ok": true}', "--db", db_path]
+    )
+    assert exit_code == 0
+    assert "delivered" in capsys.readouterr().out
+
+    # signal with invalid JSON
+    exit_code = main(
+        ["signal", "run-trace-1", "approve", "--payload", "bad-json", "--db", db_path]
+    )
+    assert exit_code == 2
+
+
+def test_cli_plan_and_dlq(
+    sample_workflow_json: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # 1. Plan command (human readable)
+    code = main(["plan", str(sample_workflow_json)])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "Workflow:" in out
+    assert "Critical Path:" in out
+    assert "Execution Stages:" in out
+
+    # 2. Plan command (--json)
+    code = main(["plan", str(sample_workflow_json), "--json"])
+    assert code == 0
+    plan_data = json.loads(capsys.readouterr().out)
+    assert "workflow_id" in plan_data
+    assert "stages" in plan_data
+
+    # 3. Plan invalid file
+    code = main(["plan", "nonexistent-file.json"])
+    assert code == 1
+    assert "Error loading workflow" in capsys.readouterr().err
+
+    # 4. DLQ command: list empty
+    db_path = str(tmp_path / "dlq_cli.db")
+    code = main(["dlq", "list", "--db", db_path])
+    assert code == 0
+    assert "Dead Letter Queue is empty" in capsys.readouterr().out
+
+    # 5. DLQ enqueue & list
+    from orchestration_engine.dead_letter import DeadLetterQueue
+    dlq = DeadLetterQueue(db_path)
+    dlq.enqueue(workflow_id="wf-test", run_id="r1", task_id="t1", error="boom")
+
+    code = main(["dlq", "list", "--db", db_path, "--json"])
+    assert code == 0
+    dlq_data = json.loads(capsys.readouterr().out)
+    assert len(dlq_data) == 1
+    assert dlq_data[0]["task_id"] == "t1"
+
+    # Human readable list
+    code = main(["dlq", "list", "--db", db_path])
+    assert code == 0
+    assert "task=t1" in capsys.readouterr().out
+
+    # 6. DLQ purge
+    code = main(["dlq", "purge", "--db", db_path])
+    assert code == 0
+    assert "Purged 1 message(s)" in capsys.readouterr().out
+
+
+

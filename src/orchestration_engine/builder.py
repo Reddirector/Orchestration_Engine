@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any, Self
 
+from orchestration_engine.dynamic_map import fan_in_task, map_tasks
 from orchestration_engine.errors import WorkflowValidationError
 from orchestration_engine.models import RetryPolicy, Task, TaskState, Workflow
 from orchestration_engine.validation import get_workflow_validation_error
@@ -73,6 +75,49 @@ class WorkflowBuilder:
             timeout_seconds=effective_timeout,
         )
         self._tasks.append(task)
+        return self
+
+    def map_tasks(
+        self,
+        base_task_id: str,
+        items: Sequence[Any],
+        name_prefix: str = "",
+        dependencies: list[str] | None = None,
+        max_attempts: int = 1,
+        delay_seconds: float = 1.0,
+        timeout_seconds: float | None = 30.0,
+        reducer_task_id: str | None = None,
+        reducer_name: str = "",
+    ) -> Self:
+        """
+        Dynamically fan out tasks over items and optionally add a fan-in reducer task.
+        """
+        policy = RetryPolicy(max_attempts=max_attempts, delay_seconds=delay_seconds)
+        effective_timeout = timeout_seconds
+        if timeout_seconds == 30.0 and self._default_timeout_seconds is not None:
+            effective_timeout = self._default_timeout_seconds
+
+        mapped = map_tasks(
+            base_task_id=base_task_id,
+            items=items,
+            name_prefix=name_prefix,
+            dependencies=dependencies,
+            retry_policy=policy,
+            timeout_seconds=effective_timeout,
+            workflow_id=self._workflow_id,
+        )
+        self._tasks.extend(mapped)
+
+        if reducer_task_id:
+            reducer = fan_in_task(
+                task_id=reducer_task_id,
+                mapped_tasks=mapped,
+                name=reducer_name or reducer_task_id,
+                timeout_seconds=effective_timeout,
+                workflow_id=self._workflow_id,
+            )
+            self._tasks.append(reducer)
+
         return self
 
     def build(self) -> Workflow:

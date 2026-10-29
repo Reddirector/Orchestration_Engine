@@ -43,6 +43,50 @@ EXPECTED_PUBLIC_API = {
     "WorkflowBuilder",
     "workflow_to_dict",
     "load_workflow_from_yaml",
+    # Async addition
+    "run_workflow_async",
+    # Decorator additions
+    "task",
+    "workflow",
+    # Caching & Rate Limiting additions
+    "TaskCache",
+    "TokenBucketRateLimiter",
+    # Enterprise & Observability additions
+    "CronSchedule",
+    "IntervalSchedule",
+    "WorkflowScheduler",
+    "map_tasks",
+    "fan_in_task",
+    "SignalBroker",
+    "default_signal_broker",
+    "SignalTimeoutError",
+    "TraceExporter",
+    "Span",
+    "run_workflow_multiprocess",
+    "force_complete_task",
+    # Enterprise Work Fields
+    "run_saga",
+    "SagaResult",
+    "SagaStatus",
+    "CircuitBreaker",
+    "CircuitState",
+    "CircuitBreakerOpenError",
+    "DeadLetterQueue",
+    "DeadLetterMessage",
+    "create_dlq_hook",
+    "TaskLease",
+    "acquire_lease",
+    "renew_lease",
+    "release_lease",
+    "get_lease",
+    "evaluate_branch",
+    "apply_branch_decision",
+    "BranchDecision",
+    "WatermarkStore",
+    "Watermark",
+    "generate_execution_plan",
+    "ExecutionPlan",
+    "ExecutionStage",
 }
 
 
@@ -196,6 +240,49 @@ def test_public_callable_signatures() -> None:
     sig = inspect.signature(oe.load_workflow_from_yaml)
     assert list(sig.parameters.keys()) == ["source", "collect_errors"]
 
+    # run_saga
+    sig = inspect.signature(oe.run_saga)
+    assert "workflow" in sig.parameters
+    assert "task_runner" in sig.parameters
+    assert "compensators" in sig.parameters
+
+    # generate_execution_plan
+    sig = inspect.signature(oe.generate_execution_plan)
+    assert list(sig.parameters.keys()) == ["workflow"]
+
+    # acquire_lease
+    sig = inspect.signature(oe.acquire_lease)
+    assert "db_path" in sig.parameters
+    assert "resource_id" in sig.parameters
+    assert "owner_id" in sig.parameters
+
+    # run_workflow_async
+    sig = inspect.signature(oe.run_workflow_async)
+    assert "workflow" in sig.parameters
+    assert "task_runner" in sig.parameters
+    assert sig.parameters["max_concurrency"].default == 100
+
+    # run_workflow_multiprocess
+    sig = inspect.signature(oe.run_workflow_multiprocess)
+    assert "workflow" in sig.parameters
+    assert "task_runner" in sig.parameters
+
+    # map_tasks
+    sig = inspect.signature(oe.map_tasks)
+    assert "base_task_id" in sig.parameters
+    assert "items" in sig.parameters
+
+    # fan_in_task
+    sig = inspect.signature(oe.fan_in_task)
+    assert "task_id" in sig.parameters
+    assert "mapped_tasks" in sig.parameters
+
+    # force_complete_task
+    sig = inspect.signature(oe.force_complete_task)
+    assert "conn" in sig.parameters
+    assert "run_id" in sig.parameters
+    assert "task_id" in sig.parameters
+
 
 def test_exception_hierarchy() -> None:
     """Verify exception inheritance."""
@@ -203,3 +290,4 @@ def test_exception_hierarchy() -> None:
     assert issubclass(oe.WorkflowValidationError, oe.OrchestrationError)
     assert issubclass(oe.PersistenceError, oe.OrchestrationError)
     assert issubclass(oe.OrchestrationError, Exception)
+    assert issubclass(oe.SignalTimeoutError, TimeoutError)

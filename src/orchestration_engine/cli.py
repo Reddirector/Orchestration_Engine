@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import importlib
 import json
 import logging
@@ -339,6 +340,101 @@ def _cmd_runs(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_plan(args: argparse.Namespace) -> int:
+    """Analyze workflow and output execution plan."""
+    from orchestration_engine.loader import load_workflow_from_json, load_workflow_from_yaml
+    from orchestration_engine.plan import generate_execution_plan
+
+    source = args.file
+    try:
+        with open(source, encoding="utf-8") as f:
+            raw = f.read()
+        if source.endswith((".yaml", ".yml")):
+            wf = load_workflow_from_yaml(raw)
+        else:
+            wf = load_workflow_from_json(json.loads(raw))
+    except Exception as exc:
+        print(f"Error loading workflow: {exc}", file=sys.stderr)
+        return 1
+
+    plan = generate_execution_plan(wf)
+    if args.json:
+        print(json.dumps(plan.to_dict(), indent=2))
+    else:
+        print(f"Workflow: {plan.workflow_id}")
+        print(f"Total Tasks: {plan.total_tasks}")
+        print(f"Max Parallelism: {plan.max_parallelism} concurrent workers")
+        print(f"Critical Path: {' -> '.join(plan.critical_path)}")
+        print("\nExecution Stages:")
+        for s in plan.stages:
+            print(f"  Stage {s.stage_index}: {', '.join(s.task_ids)}")
+    return 0
+
+
+def _cmd_dlq(args: argparse.Namespace) -> int:
+    """Manage the Dead Letter Queue."""
+    from orchestration_engine.dead_letter import DeadLetterQueue
+
+    dlq = DeadLetterQueue(args.db)
+    action = args.dlq_action
+
+    if action == "list":
+        messages = dlq.list_messages(workflow_id=args.workflow, limit=args.limit)
+        if args.json:
+            print(json.dumps([dataclasses.asdict(m) for m in messages], indent=2))
+        else:
+            if not messages:
+                print("Dead Letter Queue is empty.")
+            else:
+                for m in messages:
+                    print(
+                        f"[{m.message_id[:8]}] task={m.task_id} workflow={m.workflow_id} "
+                        f"attempts={m.attempt_count} error={m.error_message}"
+                    )
+    elif action == "purge":
+        count = dlq.purge(workflow_id=args.workflow, older_than_seconds=args.older_than)
+        print(f"Purged {count} message(s) from Dead Letter Queue.")
+    return 0
+
+
+def _cmd_trace(args: argparse.Namespace) -> int:
+    """Export Chrome Trace / Perfetto format for a run."""
+    from orchestration_engine.tracing import TraceExporter
+
+    conn = get_connection(args.db)
+    try:
+        data = TraceExporter.to_chrome_trace(conn, args.run_id)
+        out_str = json.dumps(data, indent=2)
+        if args.output:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(out_str)
+            print(f"Exported Chrome trace for run '{args.run_id}' to {args.output}")
+        else:
+            print(out_str)
+        return 0
+    finally:
+        conn.close()
+
+
+def _cmd_signal(args: argparse.Namespace) -> int:
+    """Send a human-in-the-loop signal to a workflow run."""
+    from orchestration_engine.signals import default_signal_broker
+
+    try:
+        payload = json.loads(args.payload)
+    except json.JSONDecodeError as exc:
+        print(f"Invalid JSON payload: {exc}", file=sys.stderr)
+        return 2
+
+    conn = get_connection(args.db)
+    try:
+        default_signal_broker.send_signal(args.run_id, args.signal_name, payload, conn)
+        print(f"Signal '{args.signal_name}' delivered to run '{args.run_id}'.")
+        return 0
+    finally:
+        conn.close()
+
+
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument(
@@ -429,6 +525,51 @@ def build_parser() -> argparse.ArgumentParser:
     runs_p.add_argument("--workflow", default=None, help="Filter runs by workflow identifier.")
     runs_p.add_argument("--json", action="store_true", help="Output result as JSON.")
     runs_p.set_defaults(func=_cmd_runs)
+
+    # plan
+    plan_p = subparsers.add_parser(
+        "plan", parents=[common], help="Generate dry-run execution plan and critical path."
+    )
+    plan_p.add_argument("file", help="Path to workflow JSON or YAML file.")
+    plan_p.add_argument("--json", action="store_true", help="Output plan as JSON.")
+    plan_p.set_defaults(func=_cmd_plan)
+
+    # dlq
+    dlq_p = subparsers.add_parser(
+        "dlq", parents=[common], help="Manage Dead Letter Queue for failed tasks."
+    )
+    dlq_p.add_argument("dlq_action", choices=["list", "purge"], help="DLQ action.")
+    dlq_p.add_argument("--db", default="orchestration.db", help="Path to SQLite database.")
+    dlq_p.add_argument("--workflow", default=None, help="Filter by workflow identifier.")
+    dlq_p.add_argument("--limit", type=int, default=50, help="Maximum messages to list.")
+    dlq_p.add_argument(
+        "--older-than", type=float, default=None, help="Purge messages older than N seconds."
+    )
+    dlq_p.add_argument("--json", action="store_true", help="Output as JSON.")
+    dlq_p.set_defaults(func=_cmd_dlq)
+
+    # trace
+    tr_p = subparsers.add_parser(
+        "trace", parents=[common], help="Export Chrome Trace / Perfetto format for a run."
+    )
+    tr_p.add_argument("run_id", help="Run identifier.")
+    tr_p.add_argument("--db", required=True, help="Path to SQLite database.")
+    tr_p.add_argument("-o", "--output", default=None, help="Output JSON file path.")
+    tr_p.set_defaults(func=_cmd_trace)
+
+    # signal
+    sig_p = subparsers.add_parser(
+        "signal", parents=[common], help="Send human-in-the-loop signal to a run."
+    )
+    sig_p.add_argument("run_id", help="Run identifier.")
+    sig_p.add_argument("signal_name", help="Signal name (e.g. approval, webhook).")
+    sig_p.add_argument(
+        "--payload", default="{}", help="JSON payload to deliver (default: '{}')."
+    )
+    sig_p.add_argument(
+        "--db", default="orchestration.db", help="Path to SQLite database."
+    )
+    sig_p.set_defaults(func=_cmd_signal)
 
     return parser
 

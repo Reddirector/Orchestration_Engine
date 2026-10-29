@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Distributed Sagas & Compensating Transactions (`run_saga`, `SagaResult`, `SagaStatus`)**: Production-grade Saga pattern executing backward compensating transactions in reverse topological order upon workflow failure.
+- **Resilient Circuit Breaker (`CircuitBreaker`, `CircuitState`, `CircuitBreakerOpenError`)**: Thread-safe and SQLite-persisted circuit breaker with `@cb.protect` decorator for fast-failing against down external microservices and LLM endpoints.
+- **Dead Letter Queue (`DeadLetterQueue`, `DeadLetterMessage`, `create_dlq_hook`)**: Persistent SQLite DLQ capturing failed task payloads, parameters, error messages, and stack traces with replay and auto-purge support.
+- **Distributed Advisory Leases (`TaskLease`, `acquire_lease`, `renew_lease`, `release_lease`)**: Multi-worker mutual exclusion leasing backed by SQLite WAL mode without Redis or ZooKeeper.
+- **Dynamic Decision Branching (`evaluate_branch`, `apply_branch_decision`, `BranchDecision`)**: Runtime branch evaluation dynamically activating chosen execution paths and cancelling unselected downstream branches.
+- **Stateful Incremental ETL Watermarking (`WatermarkStore`, `Watermark`)**: Persistent checkpoint store for tracking offsets, timestamps, and row IDs across pipeline runs.
+- **Dry-Run Execution Plan (`generate_execution_plan`, `ExecutionPlan`, `ExecutionStage`)**: Topological stage partitioning, critical path analysis, and parallelism estimation.
+- **CLI Subcommands**: Added `orchestration-engine plan` and `orchestration-engine dlq` (`list`, `purge`).
+- **Dynamic Task Mapping & Fan-Out / Fan-In (`map_tasks`, `fan_in_task`)**: Dynamically expand tasks across runtime collections with automatic dependency wiring and downstream aggregator reducer tasks via `builder.map_tasks()`.
+- **Cron & Interval Workflow Scheduler (`WorkflowScheduler`, `CronSchedule`, `IntervalSchedule`)**: Zero-dependency 5-field cron parser (`minute hour day month day_of_week`) and background daemon to trigger workflows on recurring schedules.
+- **Human-in-the-Loop & External Signals (`SignalBroker`, `default_signal_broker`)**: Persistent SQLite-backed signal coordinator allowing workflows to pause execution awaiting human approval, external verification, or webhook delivery.
+- **Structured Tracing & OpenTelemetry Exporters (`TraceExporter`, `Span`)**: Microsecond-accurate span generation exporting Chrome Trace format (Perfetto / Speedscope compatible) and W3C OpenTelemetry JSON.
+- **Multi-Process CPU-Bound Runner (`run_workflow_multiprocess`)**: High-throughput execution across separate Python OS processes, bypassing the GIL for CPU-bound data transformations and embeddings.
+- **Native `asyncio` Coordinator (`run_workflow_async`)**: High-throughput asynchronous DAG execution engine capable of coordinating 1,000+ concurrent I/O-bound `async def` and sync tasks with non-blocking timeouts (`asyncio.wait_for`) and zero third-party dependencies.
+- **Python Decorator Syntax (`@task` & `@workflow`)**: Ergonomic functional authoring API compiling Python functions directly into validated `Workflow` and `Task` DAGs with `.run()` and `await .run_async()`.
+- **Token-Bucket Rate Limiter (`TokenBucketRateLimiter`)**: Thread-safe and async-safe rate limiting with decorators (`@limiter.limit`, `@limiter.limit_async`) for defending against LLM and external API HTTP 429 rate limits.
+- **Deterministic SQLite Result Caching (`TaskCache`)**: SHA-256 input memoization with optional TTL support, preventing duplicate task executions across runs.
+
+### Removed
+- **Embedded Web Dashboard (`src/orchestration_engine/ui.py`, `src/orchestration_engine/web/`)**: Removed the web UI to strictly maintain the library's focus as a lean, zero-dependency orchestration backend. Replaced with richer CLI diagnostic tooling (`plan`, `dlq`).
+
 ## [0.9.0] - 2026-10-25
 
 ### Added
