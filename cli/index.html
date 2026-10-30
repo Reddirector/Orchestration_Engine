@@ -663,6 +663,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#11-coordinator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. coordinator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-worker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. worker
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1742,6 +1764,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#11-coordinator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. coordinator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-worker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. worker
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2005,10 +2049,28 @@ Specifying <code>--runner</code> dynamically imports Python code via <code>impor
 <li><code>--db</code>: Path to the SQLite database.</li>
 </ul>
 <hr />
+<h3 id="11-coordinator">11. <code>coordinator</code><a class="headerlink" href="#11-coordinator" title="Permanent link">&para;</a></h3>
+<p>Launches the zero-dependency distributed HTTP coordinator server. Orchestrates remote task polling, heartbeats, and run completion reporting across multiple worker agents over HTTP.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>orchestration-engine<span class="w"> </span>coordinator<span class="w"> </span><span class="o">[</span>--host<span class="w"> </span>&lt;host&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--port<span class="w"> </span>&lt;port&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>&lt;path&gt;<span class="o">]</span>
+</code></pre></div>
+<ul>
+<li><code>--host</code>: Host address to bind (default: <code>0.0.0.0</code>).</li>
+<li><code>--port</code>: Port number to listen on (default: <code>9100</code>).</li>
+<li><code>--db</code>: Path to SQLite database (defaults to <code>orchestration.db</code>).</li>
+</ul>
+<hr />
+<h3 id="12-worker">12. <code>worker</code><a class="headerlink" href="#12-worker" title="Permanent link">&para;</a></h3>
+<p>Launches an autonomous distributed worker daemon that connects to a remote coordinator over HTTP, polls available tasks, executes them, and streams back heartbeat status and completion payloads.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>orchestration-engine<span class="w"> </span>worker<span class="w"> </span>--coordinator<span class="w"> </span>&lt;coordinator_url&gt;
+</code></pre></div>
+<ul>
+<li><code>--coordinator</code>: (Required) Coordinator HTTP endpoint (e.g. <code>http://127.0.0.1:9100</code>).</li>
+</ul>
+<hr />
 <h2 id="observability-logging">Observability &amp; Logging<a class="headerlink" href="#observability-logging" title="Permanent link">&para;</a></h2>
 <p>By default, the <code>orchestration_engine</code> library attaches a <code>NullHandler</code> to avoid hijacking parent application logs.</p>
 <p>When running via the CLI, use the <code>--log-level</code> flag to enable structured standard logging:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>orchestration-engine<span class="w"> </span>--log-level<span class="w"> </span>INFO<span class="w"> </span>run<span class="w"> </span>examples/simple_workflow.json<span class="w"> </span>--runner<span class="w"> </span>examples.runners:run
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>orchestration-engine<span class="w"> </span>--log-level<span class="w"> </span>INFO<span class="w"> </span>run<span class="w"> </span>examples/simple_workflow.json<span class="w"> </span>--runner<span class="w"> </span>examples.runners:run
 </code></pre></div>
 <p>Supported log levels: <code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code>.</p>
 <p>Structured log events emit structured <code>extra</code> fields:
