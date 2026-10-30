@@ -466,6 +466,84 @@ print(f"Critical Path: {' -> '.join(plan.critical_path)}")
 print(f"Max Parallelism: {plan.max_parallelism}")
 ```
 
+### 7. Agentic State Graphs & Cyclic Loops
+Unlike DAGs which strictly forbid cycles, autonomous multi-agent AI systems require reflection, test-and-evaluate feedback, and self-correction loops. `StateGraph` enables cyclic graph execution with safety iteration limits (`max_iterations`) and persistent SQLite thread checkpointing:
+
+```python
+from orchestration_engine import StateGraph, StateCheckpointer, START, END
+
+builder = StateGraph()
+builder.add_node("draft", draft_agent)
+builder.add_node("critique", critique_agent)
+builder.add_node("refine", refine_agent)
+
+builder.add_edge(START, "draft")
+builder.add_edge("draft", "critique")
+builder.add_conditional_edges(
+    "critique",
+    lambda state: END if state.get("approved") else "refine"
+)
+builder.add_edge("refine", "critique")
+
+app = builder.compile(checkpointer=StateCheckpointer("agent.db"), max_iterations=10)
+result = app.invoke({"task": "Draft RFC"}, thread_id="thread-101")
+print(result.final_state)
+```
+
+### 8. Zero-Memory Streaming Tasks with Disk Spooling
+Stream high-volume records, LLM token generators, or large datasets item-by-item in $O(1)$ constant RAM. When the consumer is slower than the producer, `StreamPipe` automatically spills excess items to an SQLite ring-buffer table, mitigating backpressure:
+
+```python
+from orchestration_engine import StreamPipe, run_streaming_pipeline
+
+def producer(pipe: StreamPipe):
+    for record in generate_millions_of_records():
+        pipe.push(record)
+
+def consumer(pipe: StreamPipe):
+    total = sum(r["val"] for r in pipe)
+    return total
+
+result = run_streaming_pipeline(producer, consumer, max_buffer_size=100, spill_db_path="spool.db")
+```
+
+### 9. Priority Scheduling & Fair Multi-Tenant Queuing
+Schedule tasks by urgency (`CRITICAL`, `HIGH`, `DEFAULT`, `BATCH`) while enforcing per-tenant concurrency limits to prevent noisy-neighbor starvation:
+
+```python
+from orchestration_engine import PriorityTaskQueue, TaskPriority
+
+queue = PriorityTaskQueue(tenant_concurrency_limit=2)
+queue.push(task_1, priority=TaskPriority.BATCH, tenant_id="tenant-free")
+queue.push(task_2, priority=TaskPriority.CRITICAL, tenant_id="tenant-enterprise")
+
+# High priority and fair tenant slots are dequeued first
+next_task = queue.pop()
+```
+
+### 10. POSIX Resource Sandboxing
+Isolate untrusted code or memory-intensive tasks in an isolated subprocess with kernel-enforced RAM and CPU limits:
+
+```python
+from orchestration_engine import sandboxed, ResourceLimits
+
+@sandboxed(max_memory_mb=256, timeout_seconds=10.0)
+def untrusted_user_script(code_str: str):
+    # If this exceeds 256MB RAM or 10s CPU, it is safely killed with MemoryError/TimeoutError
+    exec(code_str)
+```
+
+### 11. Zero-Dependency Distributed Worker Cluster
+Scale task execution across multiple servers or container nodes with zero external brokers (no Celery, Redis, or RabbitMQ). The built-in stdlib HTTP `CoordinatorServer` and `WorkerAgent` orchestrate task dispatch, polling, heartbeats, and result collection over clean REST endpoints:
+
+```bash
+# On coordinator node:
+orchestration-engine coordinator --host 0.0.0.0 --port 9100 --db cluster.db
+
+# On worker nodes:
+orchestration-engine worker --coordinator http://coordinator-ip:9100
+```
+
 ## Public API
 
 | Name | Purpose |
@@ -507,6 +585,11 @@ print(f"Max Parallelism: {plan.max_parallelism}")
 | `evaluate_branch`, `apply_branch_decision`, `BranchDecision` | Dynamic decision tree evaluation and conditional path routing |
 | `WatermarkStore`, `Watermark` | Stateful incremental ETL checkpoint and watermark store |
 | `generate_execution_plan`, `ExecutionPlan`, `ExecutionStage` | Dry-run topological execution plan and critical path analyzer |
+| `StateGraph`, `CompiledStateGraph`, `StateGraphResult`, `StateCheckpointer`, `START`, `END` | Cyclic state graph engine with reflection loops and thread checkpointing |
+| `StreamPipe`, `run_streaming_pipeline` | Zero-memory chunked streaming with SQLite spill-to-disk spooling |
+| `PriorityTaskQueue`, `TaskPriority` | Multi-priority scheduling and fair multi-tenant concurrency caps |
+| `sandboxed`, `sandboxed_run`, `ResourceLimits` | Isolated subprocess runner with POSIX memory and CPU quotas |
+| `CoordinatorServer`, `WorkerAgent` | Zero-dependency distributed HTTP cluster coordinator and worker agent |
 | `OrchestrationError` | Base exception for all engine errors |
 | `WorkflowDefinitionError` | Raised on malformed workflow definitions (subclasses `ValueError`) |
 | `WorkflowValidationError` | Raised on invalid workflow DAG structure (subclasses `ValueError`) |

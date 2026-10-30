@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Agentic State Graphs & Cyclic Loops (`StateGraph`, `CompiledStateGraph`, `StateGraphResult`, `StateCheckpointer`, `START`, `END`)**: Cyclic execution graphs for autonomous AI agents, enabling reflection, test critique, and self-correction loops with `max_iterations` bounds and SQLite thread checkpointing.
+- **Zero-Memory Streaming Tasks (`StreamPipe`, `run_streaming_pipeline`)**: Constant $O(1)$ memory generator stream processing with an automatic SQLite spill-to-disk spooling ring-buffer when downstream consumers experience backpressure.
+- **Priority Scheduling & Fair Multi-Tenant Queuing (`PriorityTaskQueue`, `TaskPriority`)**: Urgency levels (`CRITICAL`, `HIGH`, `DEFAULT`, `BATCH`) combined with per-tenant concurrency throttling to eliminate noisy-neighbor starvation.
+- **POSIX Resource Sandboxing (`sandboxed`, `sandboxed_run`, `ResourceLimits`)**: Child-process execution sandbox enforcing kernel-level memory (`RLIMIT_AS`) and CPU (`RLIMIT_CPU`) quotas with automatic timeout termination.
+- **Zero-Dependency Distributed Worker Cluster (`CoordinatorServer`, `WorkerAgent`)**: Standalone HTTP coordinator and worker daemons communicating via stdlib `http.server` and `urllib.request` with task polling, heartbeat reporting, and execution leasing.
+- **CLI Distributed Commands**: Added `orchestration-engine coordinator` and `orchestration-engine worker`.
 - **Distributed Sagas & Compensating Transactions (`run_saga`, `SagaResult`, `SagaStatus`)**: Production-grade Saga pattern executing backward compensating transactions in reverse topological order upon workflow failure.
 - **Resilient Circuit Breaker (`CircuitBreaker`, `CircuitState`, `CircuitBreakerOpenError`)**: Thread-safe and SQLite-persisted circuit breaker with `@cb.protect` decorator for fast-failing against down external microservices and LLM endpoints.
 - **Dead Letter Queue (`DeadLetterQueue`, `DeadLetterMessage`, `create_dlq_hook`)**: Persistent SQLite DLQ capturing failed task payloads, parameters, error messages, and stack traces with replay and auto-purge support.

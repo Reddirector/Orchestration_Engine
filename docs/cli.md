@@ -274,6 +274,32 @@ orchestration-engine signal <run_id> <signal_name> [--payload <json>] [--db <pat
 
 ---
 
+### 11. `coordinator`
+
+Launches the zero-dependency distributed HTTP coordinator server. Orchestrates remote task polling, heartbeats, and run completion reporting across multiple worker agents over HTTP.
+
+```bash
+orchestration-engine coordinator [--host <host>] [--port <port>] [--db <path>]
+```
+
+- `--host`: Host address to bind (default: `0.0.0.0`).
+- `--port`: Port number to listen on (default: `9100`).
+- `--db`: Path to SQLite database (defaults to `orchestration.db`).
+
+---
+
+### 12. `worker`
+
+Launches an autonomous distributed worker daemon that connects to a remote coordinator over HTTP, polls available tasks, executes them, and streams back heartbeat status and completion payloads.
+
+```bash
+orchestration-engine worker --coordinator <coordinator_url>
+```
+
+- `--coordinator`: (Required) Coordinator HTTP endpoint (e.g. `http://127.0.0.1:9100`).
+
+---
+
 ## Observability & Logging
 
 By default, the `orchestration_engine` library attaches a `NullHandler` to avoid hijacking parent application logs.

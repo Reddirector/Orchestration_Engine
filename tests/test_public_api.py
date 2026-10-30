@@ -87,6 +87,22 @@ EXPECTED_PUBLIC_API = {
     "generate_execution_plan",
     "ExecutionPlan",
     "ExecutionStage",
+    # Next-Gen Pillars
+    "StateGraph",
+    "CompiledStateGraph",
+    "StateGraphResult",
+    "StateCheckpointer",
+    "START",
+    "END",
+    "StreamPipe",
+    "run_streaming_pipeline",
+    "PriorityTaskQueue",
+    "TaskPriority",
+    "sandboxed",
+    "sandboxed_run",
+    "ResourceLimits",
+    "CoordinatorServer",
+    "WorkerAgent",
 }
 
 

@@ -713,4 +713,24 @@ def test_cli_plan_and_dlq(
     assert "Purged 1 message(s)" in capsys.readouterr().out
 
 
+def test_cli_coordinator_and_worker(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # 1. Coordinator help
+    code = main(["coordinator", "--help"])
+    assert code == 0
+    assert "--host HOST" in capsys.readouterr().out
+
+    # 2. Worker help
+    code = main(["worker", "--help"])
+    assert code == 0
+    assert "--coordinator" in capsys.readouterr().out
+
+    # 3. Worker with unreachable coordinator should exit with code 1
+    code = main(["worker", "--coordinator", "http://127.0.0.1:59999"])
+    assert code == 1
+    assert "Could not connect to coordinator" in capsys.readouterr().err
+
+
+
 

@@ -435,6 +435,53 @@ def _cmd_signal(args: argparse.Namespace) -> int:
         conn.close()
 
 
+def _cmd_coordinator(args: argparse.Namespace) -> int:
+    """Launch distributed coordinator HTTP server."""
+    from orchestration_engine.distributed import CoordinatorServer
+
+    db_path = args.db or os.environ.get("ORCHESTRATION_ENGINE_DB", "orchestration.db")
+    host = args.host
+    port = args.port
+
+    try:
+        server = CoordinatorServer(host=host, port=port, db_path=db_path)
+    except OSError as exc:
+        print(f"Failed to start coordinator on {host}:{port}: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"Distributed Coordinator listening on http://{host}:{port} (db: {db_path})")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nStopping coordinator...")
+    finally:
+        server.server_close()
+    return 0
+
+
+def _cmd_worker(args: argparse.Namespace) -> int:
+    """Launch distributed worker agent."""
+    from orchestration_engine.distributed import WorkerAgent
+
+    coordinator_url = args.coordinator
+    worker = WorkerAgent(coordinator_url)
+
+    if not worker.register():
+        print(f"Could not connect to coordinator at {coordinator_url}", file=sys.stderr)
+        return 1
+
+    print(f"Worker {worker.worker_id} connected to coordinator at {coordinator_url}")
+    worker.start()
+    try:
+        while True:
+            time.sleep(1.0)
+    except KeyboardInterrupt:
+        print("\nStopping worker...")
+    finally:
+        worker.stop()
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument(
@@ -570,6 +617,26 @@ def build_parser() -> argparse.ArgumentParser:
         "--db", default="orchestration.db", help="Path to SQLite database."
     )
     sig_p.set_defaults(func=_cmd_signal)
+
+    # coordinator
+    coord_p = subparsers.add_parser(
+        "coordinator", parents=[common], help="Launch distributed coordinator HTTP server."
+    )
+    coord_p.add_argument("--host", default="0.0.0.0", help="Host address to bind.")
+    coord_p.add_argument(
+        "--port", type=int, default=9100, help="Port to listen on (default: 9100)."
+    )
+    coord_p.add_argument("--db", default=None, help="Path to SQLite database.")
+    coord_p.set_defaults(func=_cmd_coordinator)
+
+    # worker
+    worker_p = subparsers.add_parser(
+        "worker", parents=[common], help="Launch distributed worker agent."
+    )
+    worker_p.add_argument(
+        "--coordinator", required=True, help="Coordinator URL (e.g. http://127.0.0.1:9100)."
+    )
+    worker_p.set_defaults(func=_cmd_worker)
 
     return parser
 

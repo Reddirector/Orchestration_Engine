@@ -8,6 +8,7 @@ from .caching import TaskCache
 from .circuit_breaker import CircuitBreaker, CircuitBreakerOpenError, CircuitState
 from .dead_letter import DeadLetterMessage, DeadLetterQueue, create_dlq_hook
 from .decorators import task, workflow
+from .distributed import CoordinatorServer, WorkerAgent
 from .dynamic_map import fan_in_task, map_tasks
 from .errors import (
     OrchestrationError,
@@ -30,13 +31,24 @@ from .persistence import (
     list_runs,
 )
 from .plan import ExecutionPlan, ExecutionStage, generate_execution_plan
+from .priority import PriorityTaskQueue, TaskPriority
 from .process_runner import run_workflow_multiprocess
 from .rate_limiter import TokenBucketRateLimiter
 from .runner import resume_run, run_workflow
 from .sagas import SagaResult, SagaStatus, run_saga
+from .sandbox import ResourceLimits, sandboxed, sandboxed_run
 from .scheduler import CronSchedule, IntervalSchedule, WorkflowScheduler
 from .signals import SignalBroker, SignalTimeoutError, default_signal_broker
+from .state_graph import (
+    END,
+    START,
+    CompiledStateGraph,
+    StateCheckpointer,
+    StateGraph,
+    StateGraphResult,
+)
 from .status import get_run_status, get_workflow_status
+from .streaming import StreamPipe, run_streaming_pipeline
 from .tracing import Span, TraceExporter
 from .watermark import Watermark, WatermarkStore
 
@@ -113,4 +125,20 @@ __all__ = [
     "generate_execution_plan",
     "ExecutionPlan",
     "ExecutionStage",
+    # Next-Gen Pillars
+    "StateGraph",
+    "CompiledStateGraph",
+    "StateGraphResult",
+    "StateCheckpointer",
+    "START",
+    "END",
+    "StreamPipe",
+    "run_streaming_pipeline",
+    "PriorityTaskQueue",
+    "TaskPriority",
+    "sandboxed",
+    "sandboxed_run",
+    "ResourceLimits",
+    "CoordinatorServer",
+    "WorkerAgent",
 ]
