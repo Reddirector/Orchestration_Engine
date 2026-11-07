@@ -168,7 +168,7 @@ class TraceExporter:
                     },
                     "scopeSpans": [
                         {
-                            "scope": {"name": "orchestration_engine.tracer", "version": "0.9.0"},
+                            "scope": {"name": "orchestration_engine.tracer", "version": "1.0.0"},
                             "spans": [s.to_otel_dict() for s in spans],
                         }
                     ],
