@@ -482,6 +482,118 @@ def _cmd_worker(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_supervisor(args: argparse.Namespace) -> int:
+    """Scan and heal zombie tasks in SQLite workflow runs."""
+    import dataclasses
+
+    from orchestration_engine.supervisor import (
+        AutoRemedy,
+        SupervisorPolicy,
+        WorkflowSupervisor,
+    )
+
+    db_path = args.db or os.environ.get("ORCHESTRATION_ENGINE_DB", "orchestration.db")
+    remedy = AutoRemedy(args.remedy)
+    policy = SupervisorPolicy(stuck_timeout_seconds=args.timeout, default_remedy=remedy)
+    supervisor = WorkflowSupervisor(db_path, policy)
+    incidents = supervisor.scan_and_heal()
+
+    if args.json:
+        print(json.dumps([dataclasses.asdict(i) for i in incidents], indent=2))
+    else:
+        print(f"Scanned {db_path}: {len(incidents)} zombie incident(s) detected and remediated.")
+        for i in incidents:
+            print(f"  [{i.remedy_applied.value}] Run '{i.run_id}' Task '{i.task_id}': {i.reason}")
+    return 0
+
+
+def _cmd_replicate(args: argparse.Namespace) -> int:
+    """CDC stream replication commands."""
+    from orchestration_engine.replication import ReplicationClient, ReplicationServer
+
+    if args.serve:
+        db_path = args.db or os.environ.get("ORCHESTRATION_ENGINE_DB", "orchestration.db")
+        server = ReplicationServer(db_path=db_path, host=args.host, port=args.port)
+        server.start()
+        print(f"CDC Replication Server running on http://{args.host}:{args.port} (db: {db_path})")
+        try:
+            while True:
+                time.sleep(1.0)
+        except KeyboardInterrupt:
+            print("\nStopping replication server...")
+        finally:
+            server.stop()
+        return 0
+
+    if args.sync:
+        if not args.primary:
+            print("Error: --sync requires --primary <url>", file=sys.stderr)
+            return 2
+        db_path = args.db or "replica.db"
+        client = ReplicationClient(replica_conn_or_path=db_path, primary_url=args.primary)
+        synced = client.sync_once()
+        if args.json:
+            print(json.dumps({"synced_events": synced, "replica_db": db_path}))
+        else:
+            print(f"Synchronized {synced} events into {db_path} from {args.primary}")
+        return 0
+
+    print("Error: Specify either --serve or --sync", file=sys.stderr)
+    return 2
+
+
+def _cmd_compact(args: argparse.Namespace) -> int:
+    """Storage retention, compaction, and cold archive."""
+    from orchestration_engine.persistence import get_connection
+    from orchestration_engine.retention import (
+        compact_event_log,
+        export_cold_archive,
+        vacuum_database,
+    )
+
+    db_path = args.db or os.environ.get("ORCHESTRATION_ENGINE_DB", "orchestration.db")
+    conn = get_connection(db_path)
+
+    compacted = 0
+    archived_count = 0
+    days = args.older_than_days
+    older_than_sec = float(days * 86400) if days is not None else 0.0
+
+    if args.compact or not (args.archive_tar or args.vacuum):
+        compacted = compact_event_log(conn, older_than_seconds=older_than_sec)
+
+    if args.archive_tar:
+        with conn:
+            cursor = conn.execute("SELECT run_id FROM runs WHERE status IN ('succeeded', 'failed')")
+            run_ids = [r[0] for r in cursor.fetchall()]
+        if run_ids:
+            archived_count = export_cold_archive(
+                conn, run_ids, args.archive_tar, delete_from_db=args.delete_archived
+            )
+
+    if args.vacuum:
+        vacuum_database(conn)
+
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "compacted_events": compacted,
+                    "archived_runs": archived_count,
+                    "archive_file": args.archive_tar,
+                    "vacuumed": args.vacuum,
+                }
+            )
+        )
+    else:
+        print(f"Compacted {compacted} old event records in {db_path}.")
+        if args.archive_tar:
+            print(f"Exported {archived_count} run(s) to cold archive: {args.archive_tar}")
+        if args.vacuum:
+            print("Database vacuum completed successfully.")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument(
@@ -637,6 +749,73 @@ def build_parser() -> argparse.ArgumentParser:
         "--coordinator", required=True, help="Coordinator URL (e.g. http://127.0.0.1:9100)."
     )
     worker_p.set_defaults(func=_cmd_worker)
+
+    # supervisor
+    super_p = subparsers.add_parser(
+        "supervisor", parents=[common], help="Scan and heal stalled or zombie tasks."
+    )
+    super_p.add_argument("--db", default=None, help="Path to SQLite database.")
+    super_p.add_argument(
+        "--timeout",
+        type=float,
+        default=300.0,
+        help="Stuck task timeout in seconds (default: 300.0).",
+    )
+    super_p.add_argument(
+        "--remedy",
+        choices=["RETRY", "ABORT_RUN", "NOTIFY"],
+        default="RETRY",
+        help="Remediation policy to apply (default: RETRY).",
+    )
+    super_p.add_argument("--json", action="store_true", help="Output results as JSON.")
+    super_p.set_defaults(func=_cmd_supervisor)
+
+    # replicate
+    rep_p = subparsers.add_parser(
+        "replicate", parents=[common], help="CDC stream replication server and client."
+    )
+    rep_p.add_argument("--serve", action="store_true", help="Run as HTTP replication server.")
+    rep_p.add_argument("--sync", action="store_true", help="Execute one-shot sync from primary.")
+    rep_p.add_argument("--primary", default=None, help="Primary server URL for --sync.")
+    rep_p.add_argument("--host", default="0.0.0.0", help="Host address for --serve.")
+    rep_p.add_argument("--port", type=int, default=9200, help="Port for --serve (default: 9200).")
+    rep_p.add_argument("--db", default=None, help="Path to SQLite database.")
+    rep_p.add_argument("--json", action="store_true", help="Output result as JSON.")
+    rep_p.set_defaults(func=_cmd_replicate)
+
+    # compact
+    comp_p = subparsers.add_parser(
+        "compact", parents=[common], help="Event log compaction and cold archival."
+    )
+    comp_p.add_argument("--db", default=None, help="Path to SQLite database.")
+    comp_p.add_argument(
+        "--compact",
+        action="store_true",
+        help="Compact fine-grained event logs for completed runs.",
+    )
+    comp_p.add_argument(
+        "--older-than-days",
+        type=int,
+        default=30,
+        help="Target runs finished older than N days (default: 30).",
+    )
+    comp_p.add_argument(
+        "--archive-tar",
+        default=None,
+        help="Export eligible runs to compressed .tar.gz archive path.",
+    )
+    comp_p.add_argument(
+        "--delete-archived",
+        action="store_true",
+        help="Delete archived runs from the database after export.",
+    )
+    comp_p.add_argument(
+        "--vacuum",
+        action="store_true",
+        help="Perform SQLite database vacuum.",
+    )
+    comp_p.add_argument("--json", action="store_true", help="Output result as JSON.")
+    comp_p.set_defaults(func=_cmd_compact)
 
     return parser
 

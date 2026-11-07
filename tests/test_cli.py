@@ -732,5 +732,95 @@ def test_cli_coordinator_and_worker(
     assert "Could not connect to coordinator" in capsys.readouterr().err
 
 
+def test_cli_supervisor(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    db_path = str(tmp_path / "supervisor_cli.db")
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute(
+            "INSERT INTO runs (run_id, workflow_id, started_at, status, definition_json) "
+            "VALUES ('run_cli_zombie', 'wf_cli', 10.0, 'running', '{}')"
+        )
+        conn.execute(
+            """
+            INSERT INTO task_events (
+                run_id, workflow_id, task_id,
+                old_state, new_state, timestamp, attempt_count, error
+            ) VALUES ('run_cli_zombie', 'wf_cli', 'task_z', 'ready', 'running', 10.0, 1, NULL)
+            """
+        )
+
+    # 1. Run supervisor CLI in text mode
+    code = main(["supervisor", "--db", db_path, "--timeout", "5.0", "--remedy", "RETRY"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "1 zombie incident(s) detected and remediated" in out
+    assert "[RETRY] Run 'run_cli_zombie' Task 'task_z'" in out
+
+    # 2. Run supervisor CLI in JSON mode
+    code = main(["supervisor", "--db", db_path, "--timeout", "5.0", "--json"])
+    assert code == 0
+    json_out = capsys.readouterr().out
+    parsed = json.loads(json_out)
+    assert isinstance(parsed, list)
+
+
+def test_cli_replicate(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # 1. Help flag
+    assert main(["replicate", "--help"]) == 0
+    assert "--serve" in capsys.readouterr().out
+
+    # 2. Missing flag
+    assert main(["replicate"]) == 2
+    assert "Specify either --serve or --sync" in capsys.readouterr().err
+
+    # 3. Sync without primary
+    assert main(["replicate", "--sync"]) == 2
+    assert "--sync requires --primary" in capsys.readouterr().err
+
+
+def test_cli_compact(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    db_path = str(tmp_path / "compact_cli.db")
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute(
+            """
+            INSERT INTO runs (
+                run_id, workflow_id, started_at, finished_at, status, definition_json
+            ) VALUES ('run_done', 'wf_done', 100.0, 105.0, 'succeeded', '{}')
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO task_events (
+                run_id, workflow_id, task_id,
+                old_state, new_state, timestamp, attempt_count, error
+            ) VALUES ('run_done', 'wf_done', 't_done', 'ready', 'succeeded', 105.0, 1, NULL)
+            """
+        )
+
+    archive_tar = str(tmp_path / "cold_archive.tar.gz")
+    code = main([
+        "compact",
+        "--db", db_path,
+        "--archive-tar", archive_tar,
+        "--older-than-days", "0",
+        "--vacuum",
+        "--json",
+    ])
+    assert code == 0
+    out = capsys.readouterr().out
+    data = json.loads(out)
+    assert data["vacuumed"] is True
+    assert data["archive_file"] == archive_tar
+    assert data["archived_runs"] == 1
+
+
+
 
 

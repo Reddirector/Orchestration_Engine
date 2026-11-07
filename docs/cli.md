@@ -300,6 +300,60 @@ orchestration-engine worker --coordinator <coordinator_url>
 
 ---
 
+### 13. `supervisor`
+
+Scans active workflow runs in SQLite for deadlocked, abandoned, or zombie tasks (stuck in `running` past a timeout) and applies automated self-healing remedies.
+
+```bash
+orchestration-engine supervisor [--db <path>] [--timeout <seconds>] [--remedy <RETRY|ABORT_RUN|NOTIFY>] [--json]
+```
+
+- `--db`: Path to the SQLite database (defaults to `orchestration.db`).
+- `--timeout`: Stalled task duration threshold in seconds (default: `300.0`).
+- `--remedy`: Automated healing action: `RETRY` (default, resets task to ready), `ABORT_RUN` (marks run failed), or `NOTIFY` (records incident only).
+- `--json`: Output recorded incident details as structured JSON.
+
+---
+
+### 14. `replicate`
+
+Manages Change Data Capture (CDC) streaming between primary and read-replica SQLite databases over stdlib HTTP without external brokers.
+
+```bash
+# On primary node: Start HTTP CDC server
+orchestration-engine replicate --serve [--host 0.0.0.0] [--port 9200] [--db primary.db]
+
+# On replica node: Pull incremental batch from primary
+orchestration-engine replicate --sync --primary http://10.0.0.1:9200 [--db replica.db] [--json]
+```
+
+- `--serve`: Runs the primary CDC replication HTTP server daemon.
+- `--sync`: Executes a single-pass synchronization against a primary CDC endpoint.
+- `--primary`: URL of the primary CDC server (required for `--sync`).
+- `--host`: Host to bind (default: `0.0.0.0`).
+- `--port`: Port to listen on (default: `9200`).
+- `--db`: SQLite database file path.
+
+---
+
+### 15. `compact`
+
+Prunes fine-grained event logs for terminal runs, exports compressed `.tar.gz` cold archives, and reclaims disk space via database vacuuming.
+
+```bash
+orchestration-engine compact [--db <path>] [--compact] [--older-than-days <N>] [--archive-tar <path>] [--vacuum] [--json]
+```
+
+- `--db`: Path to the SQLite database.
+- `--compact`: Prune fine-grained event log entries for completed runs.
+- `--older-than-days`: Filter runs finished older than N days (default: `30`).
+- `--archive-tar`: Export eligible completed runs into a compressed `.tar.gz` archive.
+- `--delete-archived`: Remove exported runs from the SQLite database.
+- `--vacuum`: Execute non-blocking SQLite database vacuum to reclaim disk space.
+- `--json`: Output compaction summary as structured JSON.
+
+---
+
 ## Observability & Logging
 
 By default, the `orchestration_engine` library attaches a `NullHandler` to avoid hijacking parent application logs.
