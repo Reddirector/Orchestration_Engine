@@ -512,6 +512,90 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#5-agentic-self-correction-reflection-loops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Agentic Self-Correction &amp; Reflection Loops
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Agentic Self-Correction &amp; Reflection Loops">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-engineering-patterns_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Engineering Patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-distributed-sagas-compensating-e-commerce-transactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Distributed Sagas &amp; Compensating E-Commerce Transactions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Distributed Sagas &amp; Compensating E-Commerce Transactions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-engineering-patterns_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Engineering Patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-zero-memory-high-volume-event-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Zero-Memory High-Volume Event Streaming
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Zero-Memory High-Volume Event Streaming">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-engineering-patterns_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Engineering Patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1640,6 +1724,90 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#5-agentic-self-correction-reflection-loops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Agentic Self-Correction &amp; Reflection Loops
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Agentic Self-Correction &amp; Reflection Loops">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-engineering-patterns_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Engineering Patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-distributed-sagas-compensating-e-commerce-transactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Distributed Sagas &amp; Compensating E-Commerce Transactions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Distributed Sagas &amp; Compensating E-Commerce Transactions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-engineering-patterns_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Engineering Patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-zero-memory-high-volume-event-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Zero-Memory High-Volume Event Streaming
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Zero-Memory High-Volume Event Streaming">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-engineering-patterns_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Engineering Patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1732,6 +1900,48 @@
 </code></pre></div></li>
 <li><strong>Portable Serialization:</strong> Round-trip workflows to JSON/YAML dictionaries via <code>workflow_to_dict()</code> and <code>load_workflow_from_json()</code>.</li>
 <li><strong>Transactional State Persistence:</strong> SQLite write-ahead logging (WAL) logs all task events (<code>task_events</code>) and payloads (<code>task_outputs</code>) atomically.</li>
+</ul>
+<hr />
+<h2 id="5-agentic-self-correction-reflection-loops">5. Agentic Self-Correction &amp; Reflection Loops<a class="headerlink" href="#5-agentic-self-correction-reflection-loops" title="Permanent link">&para;</a></h2>
+<p><strong>Example Implementation:</strong> <a href="https://github.com/Reddirector/Orchestration_Engine/blob/main/examples/agentic_state_graph.py"><code>examples/agentic_state_graph.py</code></a></p>
+<p>Autonomous code synthesis and LLM agentic reasoning pipelines require cyclical execution loops: draft code, run test suite, critique failures, and self-correct until all assertions pass or maximum bounds are reached.</p>
+<pre class="mermaid"><code>flowchart LR
+    draft["1. Draft Agent&lt;br/&gt;(Generate Candidate)"] --&gt; critic["2. Critic Agent&lt;br/&gt;(Execute Unit Tests)"]
+    critic --&gt;|Tests Fail| refine["3. Refine Agent&lt;br/&gt;(Self-Correction)"]
+    refine --&gt; critic
+    critic --&gt;|Tests Pass| finalize["4. Finalize Code&lt;br/&gt;(Commit / Export)"]</code></pre>
+<h3 id="key-engineering-patterns_4">Key Engineering Patterns<a class="headerlink" href="#key-engineering-patterns_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Cyclic State Graph Topology:</strong> Uses <code>StateGraph</code> and <code>CompiledStateGraph</code> with <code>START</code> and <code>END</code> nodes, bypassing standard DAG acyclic restrictions.</li>
+<li><strong>Dynamic Conditional Branching:</strong> Transitions choose next nodes dynamically based on reflection evaluation (<code>add_conditional_edges</code>).</li>
+<li><strong>Thread-Scoped SQLite Checkpointing:</strong> <code>StateCheckpointer</code> records intermediate agent memory state across reflection iterations, allowing full post-mortem inspection.</li>
+<li><strong>Strict Guardrail Bounds:</strong> <code>max_iterations</code> prevents runaway infinite loops when agents encounter unsolvable constraints.</li>
+</ul>
+<hr />
+<h2 id="6-distributed-sagas-compensating-e-commerce-transactions">6. Distributed Sagas &amp; Compensating E-Commerce Transactions<a class="headerlink" href="#6-distributed-sagas-compensating-e-commerce-transactions" title="Permanent link">&para;</a></h2>
+<p><strong>Example Implementation:</strong> <a href="https://github.com/Reddirector/Orchestration_Engine/blob/main/examples/event_driven_idempotency.py"><code>examples/event_driven_idempotency.py</code></a></p>
+<p>Multi-service financial transactions—such as inventory reservation, payment charging, and cloud license provisioning—cannot rely on traditional distributed 2-phase commit (2PC). Sagas guarantee eventual consistency by executing backward compensating actions if any downstream step fails.</p>
+<pre class="mermaid"><code>flowchart TD
+    reserve["1. Reserve Stock&lt;br/&gt;(Compensator: Release)"] --&gt; charge["2. Charge Card&lt;br/&gt;(Compensator: Refund)"]
+    charge --&gt; provision["3. Cloud Provision&lt;br/&gt;(503 Outage)"]
+    provision -.-&gt;|Step 3 Fails| comp_charge["⏪ Refund Card"]
+    comp_charge -.-&gt; comp_reserve["⏪ Release Stock"]</code></pre>
+<h3 id="key-engineering-patterns_5">Key Engineering Patterns<a class="headerlink" href="#key-engineering-patterns_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Backward Rollback Ordering:</strong> When a failure occurs, registered compensating transactions execute in reverse topological order (<code>run_saga</code>).</li>
+<li><strong>Distributed Idempotency Keys:</strong> <code>IdempotencyStore</code> guarantees that retry attempts never duplicate credit card charges or double-book stock.</li>
+<li><strong>Run-Scoped Blackboard:</strong> <code>WorkflowBlackboard</code> provides atomic Compare-And-Swap (CAS) and increment counters for cross-task state sharing.</li>
+<li><strong>Business SLA Deadlines:</strong> <code>SLAMonitor</code> tracks fulfillment deadlines, triggering alerts at 75% elapsed time and escalation upon breach.</li>
+</ul>
+<hr />
+<h2 id="7-zero-memory-high-volume-event-streaming">7. Zero-Memory High-Volume Event Streaming<a class="headerlink" href="#7-zero-memory-high-volume-event-streaming" title="Permanent link">&para;</a></h2>
+<p><strong>Example Implementation:</strong> <a href="https://github.com/Reddirector/Orchestration_Engine-main/examples/streaming_pipeline.py"><code>examples/streaming_pipeline.py</code></a></p>
+<p>Pipelines processing millions of log entries or sensor metrics without running out of RAM.</p>
+<h3 id="key-engineering-patterns_6">Key Engineering Patterns<a class="headerlink" href="#key-engineering-patterns_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Generator Stream Processing:</strong> <code>StreamPipe</code> and <code>run_streaming_pipeline</code> process data chunk-by-chunk in $O(1)$ memory.</li>
+<li><strong>SQLite Spill-to-Disk Backpressure:</strong> When downstream consumers process events slower than upstream producers, excess events automatically spool to an SQLite ring buffer rather than filling process RAM.</li>
+<li><strong>POSIX Resource Quotas:</strong> Worker stages can be decorated with <code>@sandboxed(max_memory_mb=64)</code> to strictly prevent memory leaks from crashing the host process.</li>
 </ul>
 
 
