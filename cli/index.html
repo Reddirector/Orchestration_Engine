@@ -685,6 +685,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#13-supervisor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. supervisor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-replicate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. replicate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-compact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. compact
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1786,6 +1819,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#13-supervisor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. supervisor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-replicate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. replicate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-compact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        15. compact
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2067,10 +2133,52 @@ Specifying <code>--runner</code> dynamically imports Python code via <code>impor
 <li><code>--coordinator</code>: (Required) Coordinator HTTP endpoint (e.g. <code>http://127.0.0.1:9100</code>).</li>
 </ul>
 <hr />
+<h3 id="13-supervisor">13. <code>supervisor</code><a class="headerlink" href="#13-supervisor" title="Permanent link">&para;</a></h3>
+<p>Scans active workflow runs in SQLite for deadlocked, abandoned, or zombie tasks (stuck in <code>running</code> past a timeout) and applies automated self-healing remedies.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>orchestration-engine<span class="w"> </span>supervisor<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>&lt;path&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--timeout<span class="w"> </span>&lt;seconds&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--remedy<span class="w"> </span>&lt;RETRY<span class="p">|</span>ABORT_RUN<span class="p">|</span>NOTIFY&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
+</code></pre></div>
+<ul>
+<li><code>--db</code>: Path to the SQLite database (defaults to <code>orchestration.db</code>).</li>
+<li><code>--timeout</code>: Stalled task duration threshold in seconds (default: <code>300.0</code>).</li>
+<li><code>--remedy</code>: Automated healing action: <code>RETRY</code> (default, resets task to ready), <code>ABORT_RUN</code> (marks run failed), or <code>NOTIFY</code> (records incident only).</li>
+<li><code>--json</code>: Output recorded incident details as structured JSON.</li>
+</ul>
+<hr />
+<h3 id="14-replicate">14. <code>replicate</code><a class="headerlink" href="#14-replicate" title="Permanent link">&para;</a></h3>
+<p>Manages Change Data Capture (CDC) streaming between primary and read-replica SQLite databases over stdlib HTTP without external brokers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># On primary node: Start HTTP CDC server</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>orchestration-engine<span class="w"> </span>replicate<span class="w"> </span>--serve<span class="w"> </span><span class="o">[</span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="o">]</span><span class="w"> </span><span class="o">[</span>--port<span class="w"> </span><span class="m">9200</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>primary.db<span class="o">]</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># On replica node: Pull incremental batch from primary</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>orchestration-engine<span class="w"> </span>replicate<span class="w"> </span>--sync<span class="w"> </span>--primary<span class="w"> </span>http://10.0.0.1:9200<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>replica.db<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
+</code></pre></div>
+<ul>
+<li><code>--serve</code>: Runs the primary CDC replication HTTP server daemon.</li>
+<li><code>--sync</code>: Executes a single-pass synchronization against a primary CDC endpoint.</li>
+<li><code>--primary</code>: URL of the primary CDC server (required for <code>--sync</code>).</li>
+<li><code>--host</code>: Host to bind (default: <code>0.0.0.0</code>).</li>
+<li><code>--port</code>: Port to listen on (default: <code>9200</code>).</li>
+<li><code>--db</code>: SQLite database file path.</li>
+</ul>
+<hr />
+<h3 id="15-compact">15. <code>compact</code><a class="headerlink" href="#15-compact" title="Permanent link">&para;</a></h3>
+<p>Prunes fine-grained event logs for terminal runs, exports compressed <code>.tar.gz</code> cold archives, and reclaims disk space via database vacuuming.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>orchestration-engine<span class="w"> </span>compact<span class="w"> </span><span class="o">[</span>--db<span class="w"> </span>&lt;path&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--compact<span class="o">]</span><span class="w"> </span><span class="o">[</span>--older-than-days<span class="w"> </span>&lt;N&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--archive-tar<span class="w"> </span>&lt;path&gt;<span class="o">]</span><span class="w"> </span><span class="o">[</span>--vacuum<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
+</code></pre></div>
+<ul>
+<li><code>--db</code>: Path to the SQLite database.</li>
+<li><code>--compact</code>: Prune fine-grained event log entries for completed runs.</li>
+<li><code>--older-than-days</code>: Filter runs finished older than N days (default: <code>30</code>).</li>
+<li><code>--archive-tar</code>: Export eligible completed runs into a compressed <code>.tar.gz</code> archive.</li>
+<li><code>--delete-archived</code>: Remove exported runs from the SQLite database.</li>
+<li><code>--vacuum</code>: Execute non-blocking SQLite database vacuum to reclaim disk space.</li>
+<li><code>--json</code>: Output compaction summary as structured JSON.</li>
+</ul>
+<hr />
 <h2 id="observability-logging">Observability &amp; Logging<a class="headerlink" href="#observability-logging" title="Permanent link">&para;</a></h2>
 <p>By default, the <code>orchestration_engine</code> library attaches a <code>NullHandler</code> to avoid hijacking parent application logs.</p>
 <p>When running via the CLI, use the <code>--log-level</code> flag to enable structured standard logging:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>orchestration-engine<span class="w"> </span>--log-level<span class="w"> </span>INFO<span class="w"> </span>run<span class="w"> </span>examples/simple_workflow.json<span class="w"> </span>--runner<span class="w"> </span>examples.runners:run
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>orchestration-engine<span class="w"> </span>--log-level<span class="w"> </span>INFO<span class="w"> </span>run<span class="w"> </span>examples/simple_workflow.json<span class="w"> </span>--runner<span class="w"> </span>examples.runners:run
 </code></pre></div>
 <p>Supported log levels: <code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code>.</p>
 <p>Structured log events emit structured <code>extra</code> fields:
