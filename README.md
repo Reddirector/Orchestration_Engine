@@ -114,6 +114,16 @@ orchestration-engine trace <run_id> --db workflows.db -o trace.json
 
 # Send external human approval or webhook signal
 orchestration-engine signal <run_id> approval --payload '{"approved": true}' --db workflows.db
+
+# Automated self-healing watchdog for stalled/zombie tasks
+orchestration-engine supervisor --db workflows.db [--timeout 300] [--remedy RETRY] [--json]
+
+# Multi-node Change Data Capture (CDC) replication
+orchestration-engine replicate --serve --host 0.0.0.0 --port 9200 --db primary.db
+orchestration-engine replicate --sync --primary http://10.0.0.1:9200 --db replica.db
+
+# Tiered cold-archival, event compaction, and database vacuuming
+orchestration-engine compact --db workflows.db --compact --older-than-days 30 --archive-tar cold.tar.gz --vacuum
 ```
 
 For full CLI documentation, exit codes, and JSON schemas, see [docs/cli.md](docs/cli.md).
@@ -711,11 +721,16 @@ Prevent unbounded database growth by compacting terminal run event logs down to 
 ```python
 from orchestration_engine import compact_event_log, export_cold_archive, vacuum_database
 
-# Compact older terminal run events into a single terminal snapshot:
-deleted_count = compact_event_log(conn, completed_before_iso="2026-01-01T00:00:00Z")
+# Compact older terminal run events:
+deleted_count = compact_event_log(conn, older_than_seconds=30 * 86400)
 
 # Bundle completed runs into cold archive .tar.gz bundle:
-archive_path = export_cold_archive(conn, destination_dir="/backup/archives", older_than_days=30)
+archived_count = export_cold_archive(
+    conn,
+    run_ids=["run_123", "run_456"],
+    output_tar_path="/backup/archives/cold_runs.tar.gz",
+    delete_from_db=True,
+)
 
 # Reclaim database space:
 vacuum_database(conn)
