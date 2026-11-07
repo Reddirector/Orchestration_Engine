@@ -544,6 +544,362 @@ orchestration-engine coordinator --host 0.0.0.0 --port 9100 --db cluster.db
 orchestration-engine worker --coordinator http://coordinator-ip:9100
 ```
 
+### 12. Durable Timers & Workflow Suspensions
+Suspend workflows and schedule long-running wakeups (hours, days, or weeks) in SQLite without holding worker threads or processes open in memory:
+
+```python
+from orchestration_engine import TimerStore
+
+store = TimerStore("workflows.db")
+timer = store.create_timer(run_id="run-1", task_id="signoff", delay_seconds=86400.0)
+
+# Check and fire due timers on scheduler tick:
+for due in store.get_due_timers():
+    store.mark_timer_fired(due.timer_id)
+```
+
+### 13. Runtime Data Contracts & Output Validation
+Ensure type safety and prevent missing-key runtime exceptions between connected tasks with zero external dependencies:
+
+```python
+from orchestration_engine import DataContract, Field, enforce_contract
+
+user_contract = DataContract({
+    "user_id": Field(type=str, regex=r"^usr_"),
+    "tier": Field(choices={"free", "pro"}),
+    "score": Field(type=float, min_val=0.0, max_val=100.0),
+})
+
+@enforce_contract(output_contract=user_contract)
+def fetch_user_data() -> dict:
+    return {"user_id": "usr_42", "tier": "pro", "score": 98.5}
+```
+
+### 14. Chaos Engineering & Fault Injection
+Test distributed sagas, retries, and circuit breakers against simulated transient failures and network jitter before going to production:
+
+```python
+from orchestration_engine import ChaosPolicy, with_chaos
+
+policy = ChaosPolicy(
+    failure_rate=0.25,  # 25% failure injection
+    latency_seconds=0.1,
+    latency_jitter_seconds=0.05,
+    task_targets={"stripe_charge"},
+)
+
+@with_chaos(policy)
+def stripe_charge(payload: dict) -> dict:
+    return call_payment_api(payload)
+```
+
+### 15. Time-Travel Inspection & Forked Replay
+Inspect the exact task state and output snapshot at any historical event step $N$ or timestamp $T$, and fork runs from a failed step without re-executing costly upstream computations:
+
+```python
+from orchestration_engine import time_travel_inspect, fork_run_from_task, resume_run
+
+# 1. Inspect state at historical step 4
+snapshot = time_travel_inspect(conn, run_id="failed-run", at_step=4)
+print(snapshot.task_states)
+
+# 2. Fork execution from failed step 'generate_embeddings'
+new_run_id = fork_run_from_task(conn, "failed-run", restart_from_task_id="generate_embeddings")
+# Resumes using inherited outputs from step 1 without re-running earlier tasks:
+status = resume_run(conn, new_run_id, fixed_runner)
+```
+
+### 16. Semantic Workflow Versioning & Drift Detection
+Detect code topology drift between active definitions and persisted in-flight runs using deterministic 16-character SHA-256 fingerprints, with configurable migration policies (`FAIL_FAST`, `DRAIN`, `AUTO_MIGRATE`):
+
+```python
+from orchestration_engine import WorkflowVersionRegistry, compute_workflow_hash, MigrationPolicy
+
+registry = WorkflowVersionRegistry()
+v1_hash = registry.register(workflow_v1)
+
+# Verify whether an in-flight run can safely continue under updated code:
+can_proceed, reason = registry.check_migration(
+    active_workflow=workflow_v2,
+    run_definition_json=persisted_json,
+    policy=MigrationPolicy.AUTO_MIGRATE,
+)
+```
+
+### 17. Distributed Idempotency & Exactly-Once Keys
+Guarantee exactly-once execution across retries and distributed triggers using atomic SQLite state locks (`PENDING`, `COMMITTED`, `ABORTED`) and TTL expiration:
+
+```python
+from orchestration_engine import IdempotencyStore, idempotent
+
+store = IdempotencyStore(conn)
+
+# Explicit acquire/commit workflow:
+record = store.acquire("payment_order_4821", ttl_seconds=300)
+if record is None:
+    cached_output = store.get_result("payment_order_4821")
+else:
+    output = {"status": "paid", "tx": "tx_9981"}
+    store.commit("payment_order_4821", output=output)
+
+# Declarative function decorator:
+@idempotent(store=store, key_builder=lambda order_id: f"charge_{order_id}")
+def charge_customer(order_id: str) -> dict:
+    return {"status": "paid", "amount": 99.0}
+```
+
+### 18. Event-Driven Webhooks & Reactive Topic Bus
+Publish and subscribe to reactive runtime events using wildcards (`orders.*`), with a zero-dependency stdlib HTTP webhook listener:
+
+```python
+from orchestration_engine import EventBus, WebhookServer
+
+bus = EventBus()
+bus.subscribe("orders.*", lambda event: print(f"Received {event.topic}: {event.payload}"))
+
+# Start non-blocking HTTP webhook server on port 8080:
+server = WebhookServer(bus=bus, host="127.0.0.1", port=8080)
+server.start()
+# Inbound POST http://127.0.0.1:8080/webhook/orders.created dispatches to the bus
+server.stop()
+```
+
+### 19. Run-Scoped Shared Blackboard & Atomic KV Memory
+Coordinate state across distributed tasks in a DAG without polluting output dictionaries, featuring optimistic Compare-And-Swap (CAS) and atomic counters:
+
+```python
+from orchestration_engine import WorkflowBlackboard
+
+blackboard = WorkflowBlackboard(conn, run_id="order-run-102")
+blackboard.set("inventory_reserved", True)
+
+# Atomic counter increments:
+blackboard.increment("items_processed", delta=5)
+
+# Optimistic lock / Compare-And-Swap:
+swapped = blackboard.compare_and_swap(
+    key="status",
+    expected_value="pending",
+    new_value="processing"
+)
+```
+
+### 20. Automated SLA Deadlines & Escalation Alerts
+Define business SLA policies per task or workflow with proactive warning thresholds and automatic escalation callbacks:
+
+```python
+from orchestration_engine import SLAMonitor, SLAPolicy
+
+monitor = SLAMonitor()
+monitor.register_sla(
+    task_id="fraud_check",
+    policy=SLAPolicy(
+        deadline_seconds=2.0,
+        warning_ratio=0.75,  # Trigger warning at 1.5s
+        on_warning=lambda tid, elapsed, dl: print(f"Warning: {tid} near breach ({elapsed:.1f}s)"),
+        on_breach=lambda tid, elapsed, dl: print(f"SLA BREACH: {tid} exceeded {dl}s!"),
+    ),
+)
+monitor.start_task("fraud_check")
+# ... execution ...
+monitor.complete_task("fraud_check")
+```
+
+### 21. Tiered Cold-Archival & SQLite Log Compaction
+Prevent unbounded database growth by compacting terminal run event logs down to atomic summary entries, exporting compressed `.tar.gz` cold archives, and non-blocking vacuuming:
+
+```python
+from orchestration_engine import compact_event_log, export_cold_archive, vacuum_database
+
+# Compact older terminal run events into a single terminal snapshot:
+deleted_count = compact_event_log(conn, completed_before_iso="2026-01-01T00:00:00Z")
+
+# Bundle completed runs into cold archive .tar.gz bundle:
+archive_path = export_cold_archive(conn, destination_dir="/backup/archives", older_than_days=30)
+
+# Reclaim database space:
+vacuum_database(conn)
+```
+
+### 22. Hierarchical Sub-Workflows & Nested DAGs
+Embed complete child workflows as discrete steps inside a parent workflow with scoped inputs, error propagation, and hierarchical tree inspection:
+
+```python
+from orchestration_engine import make_subworkflow_runner, get_subworkflow_tree
+
+# Convert a child workflow into a task runner callable:
+child_runner = make_subworkflow_runner(
+    subworkflow=child_wf,
+    child_task_runner=child_step_runner,
+    conn_factory=lambda: get_connection("workflows.db"),
+)
+
+# Inspect full hierarchy of parent and nested child runs:
+tree = get_subworkflow_tree(conn, root_run_id=parent_run_id)
+```
+
+### 23. Incremental DAG Evaluation & Content-Addressable Cache
+Like `make` or `bazel` for workflows: skip executing tasks whose code signatures, explicit inputs, and upstream dependency outputs have not changed:
+
+```python
+from orchestration_engine import IncrementalStore, wrap_incremental
+
+store = IncrementalStore("workflows.db")
+wrapped_runner, get_summary = wrap_incremental(
+    store=store,
+    runner=task_runner,
+    code_fingerprints={"transform": "v2.1", "train_model": "v1.4"},
+)
+
+# Tasks with identical inputs and code hashes reuse outputs instantly:
+summary = get_summary()
+print("Skipped from cache:", summary.skipped_task_ids)
+```
+
+### 24. Adaptive Concurrency & Backpressure Auto-Tuning
+Dynamically auto-tune worker concurrency using AIMD (Additive Increase, Multiplicative Decrease) based on real-time task latency, transient error spikes, and system CPU load:
+
+```python
+from orchestration_engine import AdaptiveConcurrencyController, AdaptiveConcurrencyPolicy
+
+policy = AdaptiveConcurrencyPolicy(
+    min_concurrency=1,
+    max_concurrency=20,
+    initial_concurrency=4,
+    latency_threshold_seconds=1.5,
+    max_cpu_load=8.0,
+)
+ctrl = AdaptiveConcurrencyController(policy)
+hooks = ctrl.create_hooks()
+
+# Pass hooks to run_workflow; worker concurrency adapts automatically:
+run_id = run_workflow(wf, task_states, time.time, runner, conn, hooks=hooks)
+```
+
+### 25. Compressed Blob Offloading for Massive Payloads
+Prevent SQLite WAL database bloat by automatically compressing (`zlib`) and storing large task outputs (> threshold) in content-addressed local disk storage, keeping SQLite records lightweight:
+
+```python
+from orchestration_engine import BlobStore
+
+blob_store = BlobStore(storage_dir="./blobs", compression_level=6)
+
+# Automatically offload if payload exceeds threshold:
+output_pointer = blob_store.offload_if_large(large_dataset, threshold_bytes=65536)
+
+# Transparently decompress and restore when needed:
+original_data = blob_store.resolve_if_blob(output_pointer)
+```
+
+### 26. Multi-Node Replication & CDC Stream Synchronization
+Stream incremental database mutations (`task_events`, `task_outputs`, and `runs`) from a primary node to distributed read replicas over standard library HTTP:
+
+```python
+from orchestration_engine import ReplicationServer, ReplicationClient
+
+# On Primary Node:
+server = ReplicationServer(db_path="primary.db", host="0.0.0.0", port=9200)
+server.start()
+
+# On Replica Node:
+client = ReplicationClient(replica_conn_or_path="replica.db", primary_url="http://10.0.0.1:9200")
+synced_events = client.sync_once()
+print(f"Synchronized {synced_events} events from primary.")
+```
+
+### 27. Distributed Work Stealing & Dead Worker Reclamation
+Dynamically balance worker load across distributed cluster nodes by allowing under-utilized workers to steal ready tasks from overloaded peers, while automatically reclaiming orphaned tasks from dead or non-responsive worker nodes:
+
+```python
+from orchestration_engine import WorkStealingRegistry
+
+registry = WorkStealingRegistry("cluster.db")
+registry.register_worker("worker_alpha", capacity=4)
+registry.register_worker("worker_beta", capacity=4)
+
+# Under-utilized worker_beta steals up to 2 tasks from overloaded worker_alpha:
+stolen_tasks = registry.steal_work("worker_beta", max_tasks=2)
+
+# Watchdog detects crashed nodes (no heartbeat for 30s) and returns orphaned tasks to ready pool:
+reclaimed_tasks = registry.reclaim_dead_workers(timeout_seconds=30.0)
+```
+
+### 28. Historical Backfill & Deterministic Catchup Engine
+Re-run workflows across historical time windows with deterministic interval stepping, anti-thundering-herd pseudo-random jitter, and configurable catch-up policies (`ALL`, `LATEST_ONLY`, `SLIDING_WINDOW`):
+
+```python
+from orchestration_engine import BackfillExecutor, CatchupPolicy, generate_backfill_plan
+
+plan = generate_backfill_plan(
+    workflow_id="daily_metrics",
+    start_time=1700000000.0,
+    end_time=1700000500.0,
+    interval_seconds=100.0,
+    catchup_policy=CatchupPolicy.ALL,
+    jitter_max_seconds=5.0,
+)
+
+executor = BackfillExecutor("workflows.db")
+executed_windows = executor.run_plan(plan, workflow, task_runner)
+```
+
+### 29. Multi-Tenant Fair-Share & Hierarchical Quota Engine
+Enforce strict per-tenant concurrency ceilings and token-bucket request rate limits across multi-tenant environments, protecting shared workers from noisy-neighbor starvation:
+
+```python
+from orchestration_engine import TenantQuota, TenantQuotaManager
+
+manager = TenantQuotaManager()
+manager.set_quota(TenantQuota(
+    tenant_id="tenant_fintech",
+    max_concurrent=5,
+    rate_limit_per_second=20.0,
+    burst_capacity=5.0,
+))
+
+# Wrap task runner with automatic quota acquisition and release:
+tenant_runner = manager.wrap_tenant_task("tenant_fintech", base_task_runner)
+```
+
+### 30. Task Mutation Interceptors & Middleware Pipeline
+Compose an onion-style execution stack around tasks for cross-cutting concerns (such as deep secret credential masking, precise execution duration timing, and immutable audit logs) without polluting business logic:
+
+```python
+from orchestration_engine import (
+    MiddlewarePipeline,
+    audit_logging_middleware,
+    execution_timer_middleware,
+    secret_masking_middleware,
+)
+
+pipeline = (
+    MiddlewarePipeline()
+    .use(audit_logging_middleware(audit_log_sink))
+    .use(execution_timer_middleware(lambda tid, ms: print(f"{tid} ran in {ms}ms")))
+    .use(secret_masking_middleware(secret_keys={"api_key", "token", "password"}))
+)
+
+# Tasks executed through wrapped_runner will automatically have credentials redacted and timings logged:
+instrumented_runner = pipeline.wrap_runner(base_task_runner)
+```
+
+### 31. Self-Healing Workflow Watchdog & Auto-Supervisor
+Run a background watchdog that inspects active runs in SQLite for deadlocked, stalled, or zombie tasks (e.g. killed worker processes or unhandled kernel signals) and applies automated healing policies (`RETRY`, `ABORT_RUN`, `NOTIFY`):
+
+```python
+from orchestration_engine import AutoRemedy, SupervisorPolicy, WorkflowSupervisor
+
+supervisor = WorkflowSupervisor(
+    "workflows.db",
+    SupervisorPolicy(stuck_timeout_seconds=60.0, default_remedy=AutoRemedy.RETRY, max_auto_retries=3),
+)
+
+# Inspects running workflows, resets stuck tasks to ready, or aborts permanently failing runs:
+incidents = supervisor.scan_and_heal()
+for inc in incidents:
+    print(f"Healed task {inc.task_id} via {inc.remedy_applied}: {inc.reason}")
+```
+
 ## Public API
 
 | Name | Purpose |
@@ -590,6 +946,26 @@ orchestration-engine worker --coordinator http://coordinator-ip:9100
 | `PriorityTaskQueue`, `TaskPriority` | Multi-priority scheduling and fair multi-tenant concurrency caps |
 | `sandboxed`, `sandboxed_run`, `ResourceLimits` | Isolated subprocess runner with POSIX memory and CPU quotas |
 | `CoordinatorServer`, `WorkerAgent` | Zero-dependency distributed HTTP cluster coordinator and worker agent |
+| `TimerStore`, `DurableTimer`, `TimerStatus`, `create_sleep_marker` | SQLite-backed durable timers and workflow suspensions |
+| `DataContract`, `Field`, `ContractValidationError`, `enforce_contract` | Zero-dependency runtime schema contracts and validation |
+| `ChaosPolicy`, `ChaosInjector`, `ChaosFaultError`, `with_chaos` | Pluggable chaos engineering and deterministic fault injection |
+| `WorkflowReplaySnapshot`, `time_travel_inspect`, `fork_run_from_task` | Historical time-travel inspection and checkpointed run forking |
+| `WorkflowVersionRegistry`, `compute_workflow_hash`, `compare_workflows`, `MigrationPolicy` | Semantic workflow versioning and code drift migration policies |
+| `IdempotencyStore`, `IdempotencyRecord`, `IdempotencyStatus`, `IdempotencyConflictError`, `idempotent` | Distributed exactly-once idempotency keys and state locking |
+| `EventBus`, `Event`, `EventSubscription`, `WebhookServer` | Event-driven pub/sub bus with wildcard patterns and stdlib webhook server |
+| `WorkflowBlackboard` | Transactional run-scoped KV blackboard with atomic CAS and increments |
+| `SLAMonitor`, `SLAPolicy`, `SLABreachRecord` | Proactive SLA deadline tracking, threshold alerts, and breach escalation |
+| `compact_event_log`, `export_cold_archive`, `vacuum_database` | Tiered archival, event compaction, and SQLite vacuum maintenance |
+| `SubWorkflowResult`, `execute_subworkflow`, `make_subworkflow_runner`, `get_subworkflow_tree` | Hierarchical nested workflows with parent-child run trees |
+| `compute_task_hash`, `IncrementalStore`, `IncrementalRunResult`, `wrap_incremental` | Content-addressable incremental task evaluation and caching |
+| `AdaptiveConcurrencyPolicy`, `AdaptiveConcurrencyController` | AIMD adaptive concurrency control and system load backpressure |
+| `BLOB_MARKER_KEY`, `BlobReference`, `BlobStore` | Content-addressed compressed blob offloading for large payloads |
+| `CDCRun`, `CDCEvent`, `CDCOutput`, `CDCBatch`, `CDCReplicationSource`, `CDCReplicationTarget`, `ReplicationServer`, `ReplicationClient` | Multi-node SQLite replication and Change Data Capture (CDC) streaming |
+| `WorkerNodeInfo`, `WorkStealingRegistry` | Distributed cluster work stealing, load rebalancing, and dead worker task reclamation |
+| `CatchupPolicy`, `BackfillWindow`, `BackfillPlan`, `generate_backfill_plan`, `BackfillExecutor` | Historical backfill planning, anti-thundering-herd jitter, and deterministic interval execution |
+| `TenantQuota`, `TenantUsage`, `TenantQuotaManager`, `TenantQuotaExceededError` | Multi-tenant concurrency limits, token-bucket rate limiting, and fair-share isolation |
+| `TaskExecutionContext`, `Middleware`, `MiddlewarePipeline`, `secret_masking_middleware`, `execution_timer_middleware`, `audit_logging_middleware` | Composable onion task execution middleware, credential masking, duration timing, and audit logs |
+| `AutoRemedy`, `ZombieTaskIncident`, `SupervisorPolicy`, `WorkflowSupervisor` | Self-healing watchdog, stuck/zombie task detection, and automatic remediation policies |
 | `OrchestrationError` | Base exception for all engine errors |
 | `WorkflowDefinitionError` | Raised on malformed workflow definitions (subclasses `ValueError`) |
 | `WorkflowValidationError` | Raised on invalid workflow DAG structure (subclasses `ValueError`) |

@@ -95,3 +95,61 @@ workflow = (
 ```
 - **Portable Serialization:** Round-trip workflows to JSON/YAML dictionaries via `workflow_to_dict()` and `load_workflow_from_json()`.
 - **Transactional State Persistence:** SQLite write-ahead logging (WAL) logs all task events (`task_events`) and payloads (`task_outputs`) atomically.
+
+---
+
+## 5. Agentic Self-Correction & Reflection Loops
+
+**Example Implementation:** [`examples/agentic_state_graph.py`](https://github.com/Reddirector/Orchestration_Engine/blob/main/examples/agentic_state_graph.py)
+
+Autonomous code synthesis and LLM agentic reasoning pipelines require cyclical execution loops: draft code, run test suite, critique failures, and self-correct until all assertions pass or maximum bounds are reached.
+
+```mermaid
+flowchart LR
+    draft["1. Draft Agent<br/>(Generate Candidate)"] --> critic["2. Critic Agent<br/>(Execute Unit Tests)"]
+    critic -->|Tests Fail| refine["3. Refine Agent<br/>(Self-Correction)"]
+    refine --> critic
+    critic -->|Tests Pass| finalize["4. Finalize Code<br/>(Commit / Export)"]
+```
+
+### Key Engineering Patterns
+- **Cyclic State Graph Topology:** Uses `StateGraph` and `CompiledStateGraph` with `START` and `END` nodes, bypassing standard DAG acyclic restrictions.
+- **Dynamic Conditional Branching:** Transitions choose next nodes dynamically based on reflection evaluation (`add_conditional_edges`).
+- **Thread-Scoped SQLite Checkpointing:** `StateCheckpointer` records intermediate agent memory state across reflection iterations, allowing full post-mortem inspection.
+- **Strict Guardrail Bounds:** `max_iterations` prevents runaway infinite loops when agents encounter unsolvable constraints.
+
+---
+
+## 6. Distributed Sagas & Compensating E-Commerce Transactions
+
+**Example Implementation:** [`examples/event_driven_idempotency.py`](https://github.com/Reddirector/Orchestration_Engine/blob/main/examples/event_driven_idempotency.py)
+
+Multi-service financial transactions—such as inventory reservation, payment charging, and cloud license provisioning—cannot rely on traditional distributed 2-phase commit (2PC). Sagas guarantee eventual consistency by executing backward compensating actions if any downstream step fails.
+
+```mermaid
+flowchart TD
+    reserve["1. Reserve Stock<br/>(Compensator: Release)"] --> charge["2. Charge Card<br/>(Compensator: Refund)"]
+    charge --> provision["3. Cloud Provision<br/>(503 Outage)"]
+    provision -.->|Step 3 Fails| comp_charge["⏪ Refund Card"]
+    comp_charge -.-> comp_reserve["⏪ Release Stock"]
+```
+
+### Key Engineering Patterns
+- **Backward Rollback Ordering:** When a failure occurs, registered compensating transactions execute in reverse topological order (`run_saga`).
+- **Distributed Idempotency Keys:** `IdempotencyStore` guarantees that retry attempts never duplicate credit card charges or double-book stock.
+- **Run-Scoped Blackboard:** `WorkflowBlackboard` provides atomic Compare-And-Swap (CAS) and increment counters for cross-task state sharing.
+- **Business SLA Deadlines:** `SLAMonitor` tracks fulfillment deadlines, triggering alerts at 75% elapsed time and escalation upon breach.
+
+---
+
+## 7. Zero-Memory High-Volume Event Streaming
+
+**Example Implementation:** [`examples/streaming_pipeline.py`](https://github.com/Reddirector/Orchestration_Engine-main/examples/streaming_pipeline.py)
+
+Pipelines processing millions of log entries or sensor metrics without running out of RAM.
+
+### Key Engineering Patterns
+- **Generator Stream Processing:** `StreamPipe` and `run_streaming_pipeline` process data chunk-by-chunk in $O(1)$ memory.
+- **SQLite Spill-to-Disk Backpressure:** When downstream consumers process events slower than upstream producers, excess events automatically spool to an SQLite ring buffer rather than filling process RAM.
+- **POSIX Resource Quotas:** Worker stages can be decorated with `@sandboxed(max_memory_mb=64)` to strictly prevent memory leaks from crashing the host process.
+
