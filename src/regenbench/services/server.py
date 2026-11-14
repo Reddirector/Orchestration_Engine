@@ -18,9 +18,9 @@ class FaultConfig:
 class MockServiceHandler(BaseHTTPRequestHandler):
     ledger: EffectLedger
     fault_config: FaultConfig
+    server_idempotency_cache: dict[str, dict[str, Any]] = {}
 
     def log_message(self, format: str, *args: Any) -> None:
-        # Suppress standard logging to keep test output clean
         pass
 
     def do_POST(self) -> None:
@@ -38,7 +38,17 @@ class MockServiceHandler(BaseHTTPRequestHandler):
 
         idempotency_key = self.headers.get("Idempotency-Key")
 
-        # Determine path and service
+        # G6 Server-side idempotency check
+        if idempotency_key and idempotency_key in self.server_idempotency_cache:
+            cached_resp = self.server_idempotency_cache[idempotency_key]
+            resp_bytes = json.dumps(cached_resp).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(resp_bytes)))
+            self.end_headers()
+            self.wfile.write(resp_bytes)
+            return
+
         path = self.path
         if path.startswith("/payments/charge"):
             service = "payments"
@@ -54,11 +64,9 @@ class MockServiceHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        # Pre-effect delay or fault if any
         if self.fault_config.delay_seconds > 0:
             time.sleep(self.fault_config.delay_seconds)
 
-        # Commit effect to append-only ledger
         record = self.ledger.record_effect(
             intent_id=intent_id,
             service=service,
@@ -67,9 +75,7 @@ class MockServiceHandler(BaseHTTPRequestHandler):
             idempotency_key=idempotency_key,
         )
 
-        # Fault Hook: CP-B1: Commit effect, then abruptly close socket without sending reply
         if self.fault_config.crash_point == "CP-B1":
-            # Force abrupt RST/close on the socket
             try:
                 self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, b'\x01\x00\x00\x00\x00\x00\x00\x00')
                 self.connection.close()
@@ -77,13 +83,15 @@ class MockServiceHandler(BaseHTTPRequestHandler):
                 pass
             return
 
-        # Normal response: strictly exclude any intent_id to prevent ground-truth contamination
         resp_payload = {
             "status": "success",
             "effect_id": record.id,
             "service": record.service,
             "action": record.action,
         }
+        if idempotency_key:
+            self.server_idempotency_cache[idempotency_key] = resp_payload
+
         resp_bytes = json.dumps(resp_payload).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -92,13 +100,6 @@ class MockServiceHandler(BaseHTTPRequestHandler):
         self.wfile.write(resp_bytes)
 
     def do_GET(self) -> None:
-        # Reconcile lookup endpoints
-        path = self.path
-        if path.startswith("/payments/lookup"):
-            # Lookup by reference or idempotency_key
-            pass
-        elif path.startswith("/tickets/lookup"):
-            pass
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
@@ -116,6 +117,7 @@ class MockServicesServer:
 
         CustomHandler.ledger = self.ledger
         CustomHandler.fault_config = self.fault_config
+        CustomHandler.server_idempotency_cache = {}
 
         self.httpd = HTTPServer((host, port), CustomHandler)
         self.port = self.httpd.server_port

@@ -50,3 +50,29 @@ def test_runner_call4agents_leaks_on_d1_numeric_drift(tmp_path: Path):
     res_g1_d1 = runner.run_trial("S1", "G1", "CP-B2", "D1", seed=10, workdir=tmp_path / "trial_g1_d1")
     assert res_g1_d1.target_outcome == TargetOutcome.DUP
     assert res_g1_d1.target_commits == 2
+
+def test_runner_all_phase3_guards_d0_and_d1(tmp_path: Path):
+    runner = TrialRunner(results_path=tmp_path / "results_phase3.jsonl")
+
+    # G2 (agentraas default) on D0 deduplicates -> OK
+    r_g2_d0 = runner.run_trial("S1", "G2", "CP-B2", "D0", seed=20, workdir=tmp_path / "t_g2_d0")
+    assert r_g2_d0.target_outcome == TargetOutcome.OK
+    assert r_g2_d0.target_commits == 1
+
+    # G2 on D1 leaks duplicate -> DUP
+    r_g2_d1 = runner.run_trial("S1", "G2", "CP-B2", "D1", seed=20, workdir=tmp_path / "t_g2_d1")
+    assert r_g2_d1.target_outcome == TargetOutcome.DUP
+    assert r_g2_d1.target_commits == 2
+
+    # G3a (idempotent-tools default) on D0 deduplicates -> OK
+    r_g3a_d0 = runner.run_trial("S1", "G3a", "CP-B2", "D0", seed=30, workdir=tmp_path / "t_g3a_d0")
+    assert r_g3a_d0.target_outcome == TargetOutcome.OK
+
+    # G3a on D1 leaks duplicate -> DUP
+    r_g3a_d1 = runner.run_trial("S1", "G3a", "CP-B2", "D1", seed=30, workdir=tmp_path / "t_g3a_d1")
+    assert r_g3a_d1.target_outcome == TargetOutcome.DUP
+
+    # G5 (StepKey) on D1 survives numeric drift -> OK
+    r_g5_d1 = runner.run_trial("S1", "G5", "CP-B2", "D1", seed=40, workdir=tmp_path / "t_g5_d1")
+    assert r_g5_d1.target_outcome == TargetOutcome.OK
+    assert r_g5_d1.target_commits == 1

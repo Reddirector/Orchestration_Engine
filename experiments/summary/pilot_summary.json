@@ -1,0 +1,137 @@
+[
+  {
+    "guard": "G0",
+    "drift_type": "D0",
+    "trials": 60,
+    "dup_count": 60,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.9398,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G0",
+    "drift_type": "D1",
+    "trials": 60,
+    "dup_count": 60,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.9398,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G0",
+    "drift_type": "D4",
+    "trials": 60,
+    "dup_count": 60,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.9398,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G1",
+    "drift_type": "D0",
+    "trials": 60,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.05
+  },
+  {
+    "guard": "G1",
+    "drift_type": "D1",
+    "trials": 60,
+    "dup_count": 20,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.2273,
+    "ci_95_high": 0.4594
+  },
+  {
+    "guard": "G1",
+    "drift_type": "D4",
+    "trials": 60,
+    "dup_count": 40,
+    "leak_rate": 0.6667,
+    "ci_95_low": 0.5406,
+    "ci_95_high": 0.7727
+  },
+  {
+    "guard": "G2",
+    "drift_type": "D0",
+    "trials": 60,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.05
+  },
+  {
+    "guard": "G2",
+    "drift_type": "D1",
+    "trials": 60,
+    "dup_count": 20,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.2273,
+    "ci_95_high": 0.4594
+  },
+  {
+    "guard": "G2",
+    "drift_type": "D4",
+    "trials": 60,
+    "dup_count": 40,
+    "leak_rate": 0.6667,
+    "ci_95_low": 0.5406,
+    "ci_95_high": 0.7727
+  },
+  {
+    "guard": "G3a",
+    "drift_type": "D0",
+    "trials": 60,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.05
+  },
+  {
+    "guard": "G3a",
+    "drift_type": "D1",
+    "trials": 60,
+    "dup_count": 20,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.2273,
+    "ci_95_high": 0.4594
+  },
+  {
+    "guard": "G3a",
+    "drift_type": "D4",
+    "trials": 60,
+    "dup_count": 40,
+    "leak_rate": 0.6667,
+    "ci_95_low": 0.5406,
+    "ci_95_high": 0.7727
+  },
+  {
+    "guard": "G5",
+    "drift_type": "D0",
+    "trials": 60,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.05
+  },
+  {
+    "guard": "G5",
+    "drift_type": "D1",
+    "trials": 60,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.05
+  },
+  {
+    "guard": "G5",
+    "drift_type": "D4",
+    "trials": 60,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.05
+  }
+]
