@@ -14,6 +14,8 @@ from regenbench.guards.agentraas_adapter import AgentRaaSAdapter
 from regenbench.guards.idempotent_tools_adapter import IdempotentToolsAdapter
 from regenbench.guards.stepkey import StepKeyGuard
 from regenbench.guards.server_key import ServerIdempotencyKeyGuard
+from regenbench.guards.intentguard.guard import IntentGuard
+from regenbench.guards.analyzer import SemanticAnalyzerGuard
 from regenbench.services.payments import PaymentsServiceClient
 from regenbench.services.email import EmailServiceClient
 from regenbench.services.tickets import TicketsServiceClient
@@ -38,6 +40,10 @@ def get_guard(guard_name: str, run_id: str, workdir: Path):
         guard = StepKeyGuard()
     elif guard_name == "G6":
         guard = ServerIdempotencyKeyGuard()
+    elif guard_name == "G4":
+        guard = IntentGuard()
+    elif guard_name == "G7":
+        guard = SemanticAnalyzerGuard()
     else:
         raise ValueError(f"Unknown guard: {guard_name}")
     guard.setup(run_id, workdir)

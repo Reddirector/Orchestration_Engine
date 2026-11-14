@@ -76,3 +76,25 @@ def test_runner_all_phase3_guards_d0_and_d1(tmp_path: Path):
     r_g5_d1 = runner.run_trial("S1", "G5", "CP-B2", "D1", seed=40, workdir=tmp_path / "t_g5_d1")
     assert r_g5_d1.target_outcome == TargetOutcome.OK
     assert r_g5_d1.target_commits == 1
+
+def test_intentguard_and_analyzer_survive_drift(tmp_path: Path):
+    runner = TrialRunner(results_path=tmp_path / "results_g4_g7.jsonl")
+
+    # G4 (IntentGuard) on D1 numeric drift -> OK (deduplicated)
+    r_g4_d1 = runner.run_trial("S1", "G4", "CP-B2", "D1", seed=50, workdir=tmp_path / "t_g4_d1")
+    assert r_g4_d1.target_outcome == TargetOutcome.OK
+    assert r_g4_d1.target_commits == 1
+
+    # G4 (IntentGuard) on D4 volatile uuid drift -> OK (deduplicated)
+    r_g4_d4 = runner.run_trial("S1", "G4", "CP-B2", "D4", seed=51, workdir=tmp_path / "t_g4_d4")
+    assert r_g4_d4.target_outcome == TargetOutcome.OK
+    assert r_g4_d4.target_commits == 1
+
+    # G7 (Analyzer) on D1 numeric drift -> OK
+    r_g7_d1 = runner.run_trial("S1", "G7", "CP-B2", "D1", seed=52, workdir=tmp_path / "t_g7_d1")
+    assert r_g7_d1.target_outcome == TargetOutcome.OK
+    assert r_g7_d1.target_commits == 1
+
+    # G4 (IntentGuard) negative controls: N1 (different amount) must execute
+    r_g4_n1 = runner.run_trial("S1", "G4", "CP-B2", "N1", seed=53, workdir=tmp_path / "t_g4_n1")
+    assert r_g4_n1.control_outcome == ControlOutcome.OK
