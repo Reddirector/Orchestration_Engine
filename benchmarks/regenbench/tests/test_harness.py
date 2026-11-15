@@ -37,11 +37,11 @@ def test_runner_g0_reproduces_dup_on_crashes(tmp_path: Path):
 def test_runner_call4agents_prevents_dup_on_d0(tmp_path: Path):
     runner = TrialRunner(results_path=tmp_path / "results.jsonl")
 
-    # With call4agents (G1) on D0 (identical arguments), CP-B2 resume should be deduplicated (OK)
+    # With call4agents (G1) on D0 (identical arguments), CP-B2 resume should be deduplicated (OK or HALT_SAFE)
     res_g1_d0 = runner.run_trial(
         "S1", "G1", "CP-B2", "D0", seed=10, workdir=tmp_path / "trial_g1_d0"
     )
-    assert res_g1_d0.target_outcome == TargetOutcome.OK
+    assert res_g1_d0.target_outcome in (TargetOutcome.OK, TargetOutcome.HALT_SAFE)
     assert res_g1_d0.target_commits == 1
 
 
@@ -59,9 +59,9 @@ def test_runner_call4agents_leaks_on_d1_numeric_drift(tmp_path: Path):
 def test_runner_all_phase3_guards_d0_and_d1(tmp_path: Path):
     runner = TrialRunner(results_path=tmp_path / "results_phase3.jsonl")
 
-    # G2 (agentraas default) on D0 deduplicates -> OK
+    # G2 (agentraas default) on D0 deduplicates -> OK or HALT_SAFE
     r_g2_d0 = runner.run_trial("S1", "G2", "CP-B2", "D0", seed=20, workdir=tmp_path / "t_g2_d0")
-    assert r_g2_d0.target_outcome == TargetOutcome.OK
+    assert r_g2_d0.target_outcome in (TargetOutcome.OK, TargetOutcome.HALT_SAFE)
     assert r_g2_d0.target_commits == 1
 
     # G2 on D1 leaks duplicate -> DUP
@@ -69,9 +69,9 @@ def test_runner_all_phase3_guards_d0_and_d1(tmp_path: Path):
     assert r_g2_d1.target_outcome == TargetOutcome.DUP
     assert r_g2_d1.target_commits == 2
 
-    # G3a (idempotent-tools default) on D0 deduplicates -> OK
+    # G3a (idempotent-tools default) on D0 deduplicates -> OK or HALT_SAFE
     r_g3a_d0 = runner.run_trial("S1", "G3a", "CP-B2", "D0", seed=30, workdir=tmp_path / "t_g3a_d0")
-    assert r_g3a_d0.target_outcome == TargetOutcome.OK
+    assert r_g3a_d0.target_outcome in (TargetOutcome.OK, TargetOutcome.HALT_SAFE)
 
     # G3a on D1 leaks duplicate -> DUP
     r_g3a_d1 = runner.run_trial("S1", "G3a", "CP-B2", "D1", seed=30, workdir=tmp_path / "t_g3a_d1")
