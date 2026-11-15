@@ -21,10 +21,12 @@ class StepKeyGuard(Guard):
         self.run_id: str = "default_run"
         self.workdir: Path | None = None
         self._halted: list[HaltInfo] = []
+        self._step_counter: int = 0
 
     def setup(self, run_id: str, workdir: Path) -> None:
         self.run_id = run_id
         self.workdir = workdir
+        self._step_counter = 0
         self.db_path = workdir / "stepkey_store.sqlite"
         with sqlite3.connect(str(self.db_path)) as conn:
             conn.execute(
@@ -46,7 +48,9 @@ class StepKeyGuard(Guard):
     ) -> Callable[..., Any]:
         @functools.wraps(fn)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
-            step_key = f"{self.run_id}:{tool_name}"
+            step_idx = self._step_counter
+            self._step_counter += 1
+            step_key = f"{self.run_id}:{step_idx}:{tool_name}"
             with sqlite3.connect(str(self.db_path)) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -79,6 +83,7 @@ class StepKeyGuard(Guard):
 
     def on_resume(self, run_id: str) -> None:
         self.run_id = run_id
+        self._step_counter = 0
 
     def halted(self) -> list[HaltInfo]:
         return self._halted

@@ -4,6 +4,14 @@ from hypothesis import strategies as st
 from regenbench.drift.mutators import DriftMutator
 
 
+def test_is_mutated_detects_numeric_float_type_change():
+    orig = {"order_id": "ord_1", "amount": 1000}
+    mut = {"order_id": "ord_1", "amount": 1000.0}
+    # Python equality considers 1000 == 1000.0, but json serialization detects drift
+    assert orig == mut
+    assert DriftMutator.is_mutated(orig, mut) is True
+
+
 def test_d0_none():
     args = {"amount": 100, "user": "alice@example.com"}
     mutated = DriftMutator.mutate("D0", args, seed=42)

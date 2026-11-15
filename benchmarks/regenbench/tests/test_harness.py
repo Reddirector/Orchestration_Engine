@@ -83,6 +83,16 @@ def test_runner_all_phase3_guards_d0_and_d1(tmp_path: Path):
     assert r_g5_d1.target_commits == 1
 
 
+def test_g5_control_action_commits_once_and_no_false_block(tmp_path: Path):
+    runner = TrialRunner(results_path=tmp_path / "results_g5.jsonl")
+    r_g5_d0 = runner.run_trial("S1", "G5", "CP-B2", "D0", seed=40, workdir=tmp_path / "t_g5_d0")
+    assert r_g5_d0.target_outcome == TargetOutcome.OK
+    assert r_g5_d0.target_commits == 1
+    # Control action must execute cleanly without FALSE_BLOCK
+    assert r_g5_d0.control_outcome == ControlOutcome.OK
+    assert r_g5_d0.control_commits == 1
+
+
 def test_intentguard_and_analyzer_survive_drift(tmp_path: Path):
     runner = TrialRunner(results_path=tmp_path / "results_g4_g7.jsonl")
 

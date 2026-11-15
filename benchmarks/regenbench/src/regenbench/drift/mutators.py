@@ -1,10 +1,16 @@
 import copy
+import json
 import random
 from typing import Any
 
 
 class DriftMutator:
     """Applies controlled synthetic mutations (D0-D5) and negative controls (N1-N3)."""
+
+    @staticmethod
+    def is_mutated(orig: dict[str, Any], mutated: dict[str, Any]) -> bool:
+        """Determines whether arguments changed using stable JSON serialization."""
+        return json.dumps(orig, sort_keys=True) != json.dumps(mutated, sort_keys=True)
 
     @classmethod
     def mutate(cls, drift_id: str, args: dict[str, Any], seed: int = 42) -> dict[str, Any]:
