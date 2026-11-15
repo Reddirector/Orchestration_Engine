@@ -67,7 +67,7 @@ Run by me this session, with outcomes: ACRFence full text (read); call4agents Py
 
 Repositioning required:
 
-1. **IntentGuard is not novel as a concept.** ACRFence proposes semantic comparison at the tool boundary. Position ours as a deterministic, schema-declared alternative, and add an ACRFence-style analyzer as a baseline guard (G7), since no implementation exists.
+1. **IntentGuard is not unique as a concept.** ACRFence proposes semantic comparison at the tool boundary. Position ours as a deterministic, schema-declared alternative, and add an ACRFence-style analyzer as a baseline guard (G7 (rule-based)), since no implementation exists.
 2. **RQ2 is partly covered** by DFAH. Our addition must be: drift classified by type, conditioned on post-restore context, and linked to guard leakage.
 3. **Gate 2 must not rest on small local models alone.** DFAH suggests they may drift less than frontier models. Include a capped frontier-model check before concluding "drift is rare".
 4. **Test every guard in default and documented-workaround configurations** (for example `c4a_key`, idempotent-tools `context=`), or the benchmark is a strawman.

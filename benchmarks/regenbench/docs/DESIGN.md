@@ -31,7 +31,7 @@ Evidence already published (verify each before citing in the final report):
 | ACRFence proof of concept (read in full) | Claude Code with Qwen3-32B: 10 of 10 checkpoint-restore trials duplicated a payment after the model regenerated a reference UUID; 0 of 10 without restore. No implementation of its own mitigation. |
 | DFAH, arXiv 2601.15322 | Measures action, signature and decision determinism over 4,700+ runs and 7 models, with an open-source harness. Small models were more deterministic than frontier models. Not about guards. |
 | ReliabilityBench, arXiv 2601.06112 | Fault injection plus task perturbation, correctness by end-state equivalence. Not about guards or duplicate effects. |
-| Bide, agentraas-chaos, call4agents crashtest | Crash-injection benchmarks and testers already exist (not about drift). Our novelty is the drift dimension and the cross-guard measurement. |
+| Bide, agentraas-chaos, call4agents crashtest | Crash-injection benchmarks and testers already exist (not about drift). Our focus is the drift dimension and the cross-guard measurement. |
 
 ---
 

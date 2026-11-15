@@ -50,9 +50,6 @@ Across 1,260 multi-process trials (with real `os._exit` worker kills and an out-
 ---
 
 ## 3. Natural Drift Findings (Mode M)
-Tested on local `llama3.2:3b` via Ollama:
-- Under **C0 (identical prompt)** at `temperature=0.0`, models exhibited deterministic outputs (D0).
-- Under **C1 (post-crash note)** and **C2 (summary context)**, models reworded free text and introduced argument drift / intent shifts (`DIFFERENT_INTENT` or `D3` in 33.3% of tested samples).
-- Under **C4 (original call shown in system prompt)**, argument drift was significantly suppressed.
+Mode M results NOT VALIDATED (prompt design artifact: fields missing from prompts, unit mismatch, pairs compare generator args instead of model outputs); no claim is made about the drift rate of real models.
 
 G8 (engine adapter): results NOT VALIDATED, see experiments/summary/g8a_results.jsonl and g8b_results.jsonl; no claim is made about the engine.
