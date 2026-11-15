@@ -60,6 +60,8 @@ Evidence already published (verify each before citing in the final report):
 - D0: None (control)
 - D1: Numeric format
 - D2: Structure noise
+- D2a: Key reordering only
+- D2b: String padding
 - D3: Free-text paraphrase
 - D4: Volatile fields
 - D5: Encoding aliases
@@ -74,6 +76,15 @@ Evidence already published (verify each before citing in the final report):
 - CP-C: Response received, guard has not recorded the result
 - CP-D: Guard recorded the result, agent checkpoint not yet saved
 - CP-E: No crash: client timeout while the server commits slowly, then retry
+
+### 5.3 Guard key definitions
+- G0 None: Passthrough baseline without dedup.
+- G1 call4agents: Exact-argument SHA256 keying over canonical arguments.
+- G2 agentraas: Exact-argument keying over serialized argument dictionary.
+- G3a idempotent-tools: Exact-argument SHA256 keying over function name and arguments.
+- G5 StepKey: Key = run_id + per-process call index + tool name (the index restarts at 0 in a resumed worker). Argument differences are bypassed.
+- G4 IntentGuard: Semantic/business intent keying via normalized identifiers.
+- G7 SemanticAnalyzer: Reference classifier evaluating intent equivalence.
 
 ### 5.4 Scenarios
 - S1 payments: `charge_card(order_id, amount, currency, reference)` -> intent: order_id, amount in minor units, currency

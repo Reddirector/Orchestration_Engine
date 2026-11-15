@@ -49,7 +49,7 @@ class DriftMutator:
                 keys = list(reversed(keys))
             return {k: res[k] for k in keys}
 
-        elif drift_id == "D2b":  # Whitespace only
+        elif drift_id == "D2b":  # String padding
             for text_key in ["subject", "body", "title", "reference"]:
                 if text_key in res and isinstance(res[text_key], str):
                     res[text_key] = f"  {res[text_key]}  "

@@ -41,10 +41,10 @@ def test_d2a_key_reorder_only():
     assert m2a == args
 
 
-def test_d2b_whitespace_only():
+def test_d2b_string_padding():
     args = {"order_id": "ord_1", "subject": "Invoice #100", "body": "Please pay"}
     m2b = DriftMutator.mutate("D2b", args, seed=1)
-    # Whitespace variation introduced into text fields
+    # String padding introduced into text fields
     assert m2b["order_id"] == "ord_1"
     assert m2b["subject"] != args["subject"] or m2b["body"] != args["body"]
     assert m2b["subject"].strip() == args["subject"].strip()
