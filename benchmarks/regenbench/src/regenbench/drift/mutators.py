@@ -9,7 +9,9 @@ class DriftMutator:
 
     @staticmethod
     def is_mutated(orig: dict[str, Any], mutated: dict[str, Any]) -> bool:
-        """Determines whether arguments changed using stable JSON serialization."""
+        """Determines whether arguments changed using stable JSON serialization and key ordering."""
+        if list(orig.keys()) != list(mutated.keys()):
+            return True
         return json.dumps(orig, sort_keys=True) != json.dumps(mutated, sort_keys=True)
 
     @classmethod
