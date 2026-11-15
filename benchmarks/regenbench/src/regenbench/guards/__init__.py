@@ -1,0 +1,1 @@
+"""Guard protocol and adapters."""

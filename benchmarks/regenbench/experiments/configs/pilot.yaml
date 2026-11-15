@@ -1,0 +1,16 @@
+guards:
+  - "G0"
+  - "G1"
+  - "G2"
+  - "G3a"
+  - "G5"
+scenarios:
+  - "S1"
+  - "S2"
+  - "S3"
+drift_types:
+  - "D0"
+  - "D1"
+  - "D4"
+crash_point: "CP-B2"
+seeds: 20

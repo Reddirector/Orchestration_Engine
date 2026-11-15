@@ -1,0 +1,45 @@
+[project]
+name = "regenbench"
+version = "0.1.0"
+description = "Do idempotency guards survive LLM regeneration?"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "pyyaml>=6.0.2",
+    "pydantic>=2.10.6",
+    "call4agents==0.7.2",
+    "agentraas==0.16.0",
+    "idempotent-tools==0.1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.4",
+    "hypothesis>=6.124.7",
+    "numpy>=2.2.2",
+    "pandas>=2.2.3",
+    "scipy>=1.15.1",
+    "matplotlib>=3.10.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.5",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
