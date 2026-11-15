@@ -11,7 +11,7 @@
 RegenBench measured whether once-only tool-call idempotency guards prevent duplicate side effects when crashed or retried LLMs regenerate slightly drifted tool-call arguments.
 Across 1,260 multi-process trials (with real `os._exit` worker kills and an out-of-band SQLite effect ledger), the findings show:
 
-1. **Exact-argument guards fail consistently under drift (H1 confirmed):**  
+1. **Exact-argument guards fail consistently under drift (H1 supported):**  
    All three third-party guards in their default configurations (`call4agents`, `agentraas`, `idempotent-tools`):
    - Safely prevented duplicates under **D0 (exact replay)**: 0.0% leak rate (`DUP / trials`).
    - Leaked duplicates on **D1 (numeric format)**: **33.3%** leak rate.
@@ -21,10 +21,10 @@ Across 1,260 multi-process trials (with real `os._exit` worker kills and an out-
    - Leaked duplicates on **D5 (encoding / casing aliases)**: **33.3%** leak rate.
 
 2. **StepKey (`G5`) & Analyzer Baseline (`G7`) eliminate drift leaks:**  
-   Both achieved 0.0% duplicate rate across all drift types `D0` to `D5`.
+   Both observed 0.0% duplicate rate across all drift types `D0` to `D5`.
 
-3. **IntentGuard (`G4`) cuts duplicates deterministically (H3 confirmed):**  
-   IntentGuard eliminated duplicates across `D0`, `D1`, `D2`, `D4`, and `D5` (0.0% leak rate). On unconstrained free-text email bodies (`D3`), it showed an expected tradeoff (33.3% leak) where business intent cannot be unambiguously extracted from raw arbitrary prose without an explicit intent token.
+3. **IntentGuard (`G4`) cuts duplicates deterministically (H3 supported):**  
+   IntentGuard reduced duplicates to zero across `D0`, `D1`, `D2`, `D4`, and `D5` (0.0% leak rate). On unconstrained free-text email bodies (`D3`), it showed an expected tradeoff (33.3% leak) where business intent cannot be unambiguously extracted from raw arbitrary prose without an explicit intent token.
 
 ---
 

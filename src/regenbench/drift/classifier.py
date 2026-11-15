@@ -21,7 +21,7 @@ class DeterministicDriftClassifier:
         if is_exact:
             return DriftType.D0.value
 
-        # Check for different intent first (N1: different amount, N2: different recipient)
+        # Check for different intent initially (N1: different amount, N2: different recipient)
         # S1 check
         if "order_id" in orig:
             if orig.get("order_id") != regen.get("order_id"):

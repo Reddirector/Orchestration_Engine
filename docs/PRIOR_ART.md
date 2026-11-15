@@ -71,7 +71,7 @@ Repositioning required:
 2. **RQ2 is partly covered** by DFAH. Our addition must be: drift classified by type, conditioned on post-restore context, and linked to guard leakage.
 3. **Gate 2 must not rest on small local models alone.** DFAH suggests they may drift less than frontier models. Include a capped frontier-model check before concluding "drift is rare".
 4. **Test every guard in default and documented-workaround configurations** (for example `c4a_key`, idempotent-tools `context=`), or the benchmark is a strawman.
-5. D4 (volatile fields) is already demonstrated in the wild by ACRFence; keep it first-class.
+5. D4 (volatile fields) is already demonstrated in the wild by ACRFence; keep it a primary synthetic category.
 
 ---
 

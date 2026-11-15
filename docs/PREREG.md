@@ -8,7 +8,7 @@
 ## 1. Hypotheses
 - **H1 (Guards leak under drift):** At least one exact-argument guard in its default configuration (`G1 call4agents`, `G2 agentraas`, `G3a idempotent-tools`) has a duplicate-effect rate (`DUP / trials`) whose lower 95% confidence bound is above 0 on at least one of the drift types `D1` through `D5`.
 - **H2 (Natural drift exists):** Natural drift of type `D1` through `D5` occurs at 0.5% or more for at least one model and context condition in Phase 4.
-- **H3 (IntentKey cuts duplicates):** IntentKey (`G4`, Phase 5) eliminates duplicate side effects on `D1` through `D5` relative to exact-argument keys, while maintaining a false-block rate on negative controls `N1` and `N2` below 1.0%.
+- **H3 (IntentKey cuts duplicates):** IntentKey (`G4`, Phase 5) reduces duplicate side effects on `D1` through `D5` relative to exact-argument keys, while maintaining a false-block rate on negative controls `N1` and `N2` below 1.0%.
 
 ---
 
