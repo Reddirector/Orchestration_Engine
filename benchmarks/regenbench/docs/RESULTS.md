@@ -20,9 +20,8 @@ Across 1,260 multi-process trials (with real `os._exit` worker kills and an out-
    - Leaked duplicates on **D4 (volatile reference UUIDs / nonces)**: **66.7%** leak rate.
    - Leaked duplicates on **D5 (encoding / casing aliases)**: **33.3%** leak rate.
 
-2. **StepKey (`G5`) & Analyzer Baseline (`G7`) prevent drift leaks:**  
-   Both observed 0.0% duplicate rate across all drift types `D0` to `D5`.
-   *(Note on G5: The initial pre-step-index pilot run was archived to `archive_invalid_g5_results.jsonl` as INVALID due to 100% false-block on control actions. G5 was re-run with key = run_id + per-process call index + tool name, yielding 0.0% duplicates and 0.0% false-block across all 360 trials).*
+2. **StepKey (`G5`) trades duplicates for false blocks and lost effects:**  
+   StepKey observed 0 duplicates across `D0` and `D1`. Across the full matrix of 450 trials in `full_results.jsonl`, G5 yielded 0 DUP, 300 OK, 60 LOST (all at CP-A due to premature step completion claims), and 90 FALSE_BLOCK (all at CP-B2 across negative controls N1, N2, and N3 because distinct requests sharing the step position are collapsed).
 
 3. **IntentGuard (`G4`) cuts duplicates deterministically (H3 supported):**  
    IntentGuard reduced duplicates to zero across `D0`, `D1`, `D2`, `D4`, and `D5` (0.0% leak rate). On unconstrained free-text email bodies (`D3`), it showed an expected tradeoff (33.3% leak) where business intent cannot be unambiguously extracted from raw arbitrary prose without an explicit intent token.
@@ -37,7 +36,7 @@ Across 1,260 multi-process trials (with real `os._exit` worker kills and an out-
 | **G1 (`call4agents`)** | Exact Args | **0.0%** | **33.3%** | **100.0%** | **66.7%** | **66.7%** | **33.3%** |
 | **G2 (`agentraas`)** | Exact Args | **0.0%** | **33.3%** | **100.0%** | **66.7%** | **66.7%** | **33.3%** |
 | **G3a (`idempotent-tools`)** | Exact Args | **0.0%** | **33.3%** | **100.0%** | **66.7%** | **66.7%** | **33.3%** |
-| **G5 (StepKey)** | Run + Step Index | Outcomes (CP-B2, D0-D5): 120 trials, 0 DUP, 120 OK, 0 LOST, 0 HALT, 0 FALSE_BLOCK. Negative controls (N1-N3): 90 trials, 0 OK, 90 FALSE_BLOCK. |
+| **G5 (StepKey)** | Run + Step Index | Outcomes: 450 trials in full matrix, 0 DUP, 300 OK, 60 LOST (all at CP-A), 90 FALSE_BLOCK (N1-N3 at CP-B2). |
 | **G4 (IntentGuard)** | Intent Key | **0.0%** | **0.0%** | **0.0%** | **33.3%** | **0.0%** | **0.0%** |
 | **G7 (Analyzer Baseline)** | Semantic | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** |
 

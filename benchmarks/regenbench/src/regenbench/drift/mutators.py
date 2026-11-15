@@ -88,16 +88,24 @@ class DriftMutator:
                         res[email_key] = f"{user.upper()}@{domain.lower()}"
             return res
 
-        elif drift_id == "N1":  # Negative control: Different amount
-            for k in ["amount", "price", "cents"]:
-                if k in res and isinstance(res[k], (int, float)):
-                    res[k] = res[k] + rng.randint(1, 50)
+        elif drift_id == "N1":  # Negative control: Different business fields (S1 amount, S2 recipient, S3 customer_id)
+            if "amount" in res and isinstance(res["amount"], (int, float)):
+                res["amount"] = res["amount"] + rng.randint(1, 50)
+            if "to" in res and isinstance(res["to"], str):
+                res["to"] = f"diff_user_{rng.randint(100, 999)}@example.com"
+            if "customer_id" in res and isinstance(res["customer_id"], str):
+                res["customer_id"] = f"cust_diff_{rng.randint(1000, 9999)}"
             return res
 
-        elif drift_id == "N2":  # Negative control: Different recipient
-            for email_key in ["to", "email", "recipient"]:
-                if email_key in res and isinstance(res[email_key], str):
-                    res[email_key] = f"different_user_{rng.randint(100, 999)}@example.com"
+        elif drift_id == "N2":  # Negative control: Alternative business fields
+            if "order_id" in res and isinstance(res["order_id"], str):
+                res["order_id"] = f"ord_alt_{rng.randint(10000, 99999)}"
+            elif "amount" in res and isinstance(res["amount"], (int, float)):
+                res["amount"] = res["amount"] + rng.randint(51, 100)
+            if "to" in res and isinstance(res["to"], str):
+                res["to"] = f"alt_user_{rng.randint(100, 999)}@example.com"
+            if "customer_id" in res and isinstance(res["customer_id"], str):
+                res["customer_id"] = f"cust_alt_{rng.randint(1000, 9999)}"
             return res
 
         elif drift_id == "N3":  # Negative control: Ambiguous explicit repeat (identical payload)

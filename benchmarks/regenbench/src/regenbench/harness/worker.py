@@ -11,7 +11,7 @@ from regenbench.guards.agentraas_adapter import AgentRaaSAdapter
 from regenbench.guards.analyzer import SemanticAnalyzerGuard
 from regenbench.guards.call4agents_adapter import Call4AgentsAdapter
 from regenbench.guards.idempotent_tools_adapter import IdempotentToolsAdapter
-from regenbench.guards.g8_engine import G8EngineGuard
+from regenbench.guards.g8_engine import G8aGuard, G8bGuard, G8EngineGuard, run_g8_worker
 from regenbench.guards.intentguard.guard import IntentGuard
 from regenbench.guards.none import NoGuard
 from regenbench.guards.server_key import ServerIdempotencyKeyGuard
@@ -46,6 +46,10 @@ def get_guard(guard_name: str, run_id: str, workdir: Path):
         guard = SemanticAnalyzerGuard()
     elif guard_name == "G8":
         guard = G8EngineGuard()
+    elif guard_name == "G8a":
+        guard = G8aGuard()
+    elif guard_name == "G8b":
+        guard = G8bGuard()
     else:
         raise ValueError(f"Unknown guard: {guard_name}")
     guard.setup(run_id, workdir)
@@ -102,6 +106,11 @@ def main():
 
     workdir = Path(args.workdir)
     scenario = ScenarioGenerator.generate(args.scenario, seed=args.seed)
+
+    if args.guard in ("G8a", "G8b"):
+        run_g8_worker(args, scenario)
+        sys.exit(0)
+
     guard = get_guard(args.guard, args.run_id, workdir)
 
     target_step = scenario.target_step
