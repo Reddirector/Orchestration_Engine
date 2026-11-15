@@ -165,6 +165,11 @@ All counts below derive from the committed experiment summary files (`full_resul
 
 **Note on G3a at CP-B1:** observed: after a dropped connection the library marks the call failed and the retry executes again; documented behavior: NOT CHECKED.
 
+### Known open questions
+- N3: G1 and G3a show 30 OK, G2 shows 30 FALSE_BLOCK; the cause is not yet explained.
+- G1_workaround vs G3b: same business-ID key, different results on mutated D4 trials; cause not yet explained.
+- G7 (rule-based) loses 30/30 effects at CP-A and false-blocks 10/30 on N1.
+
 ### Limitations
 - **Synthetic Drift:** Drift types are generated via programmatic mutators rather than natural language generation samples.
 - **One Local Model:** Automated local evaluations utilized a single small model (`llama3.2:3b`) hosted via Ollama.
