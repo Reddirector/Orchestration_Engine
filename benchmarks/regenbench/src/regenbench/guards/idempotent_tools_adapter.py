@@ -69,7 +69,15 @@ class IdempotentToolsAdapter(Guard):
 
         @functools.wraps(fn)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
-            return decorated(*args, **kwargs)
+            call_dict = kwargs if kwargs else (args[0] if args and isinstance(args[0], dict) else {"args": args})
+            try:
+                return decorated(*args, **kwargs)
+            except Exception as exc:
+                if "DuplicateInFlightError" in type(exc).__name__:
+                    self._halted.append(
+                        HaltInfo(tool_name=tool_name, args=call_dict, reason=f"DuplicateInFlightError: {exc}")
+                    )
+                raise
 
         return wrapped
 

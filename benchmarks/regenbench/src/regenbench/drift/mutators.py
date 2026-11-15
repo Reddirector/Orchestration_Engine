@@ -111,5 +111,10 @@ class DriftMutator:
         elif drift_id == "N3":  # Negative control: Ambiguous explicit repeat (identical payload)
             return res
 
+        elif drift_id == "D6":  # Structural: batch/compound envelope
+            from regenbench.drift.heldout_mutators import HeldOutMutator
+
+            return HeldOutMutator.mutate("D6", args, seed=seed)
+
         else:
             raise ValueError(f"Unknown drift or negative control ID: {drift_id}")

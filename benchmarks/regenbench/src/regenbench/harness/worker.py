@@ -57,33 +57,38 @@ def get_guard(guard_name: str, run_id: str, workdir: Path):
 
 
 def execute_call(service_url: str, tool_name: str, args: dict[str, Any], intent_id: str):
-    idem_key = args.get("idempotency_key")
+    effective_args = (
+        args["batch"][0]
+        if "batch" in args and isinstance(args["batch"], list) and len(args["batch"]) > 0
+        else args
+    )
+    idem_key = effective_args.get("idempotency_key")
     if tool_name == "charge_card":
         client = PaymentsServiceClient(service_url)
         return client.charge_card(
-            order_id=args["order_id"],
-            amount=args["amount"],
-            currency=args["currency"],
-            reference=args.get("reference", ""),
+            order_id=effective_args["order_id"],
+            amount=effective_args["amount"],
+            currency=effective_args["currency"],
+            reference=effective_args.get("reference", ""),
             intent_id=intent_id,
             idempotency_key=idem_key,
         )
     elif tool_name == "send_email":
         client = EmailServiceClient(service_url)
         return client.send_email(
-            to=args["to"],
-            subject=args["subject"],
-            body=args["body"],
+            to=effective_args["to"],
+            subject=effective_args["subject"],
+            body=effective_args["body"],
             intent_id=intent_id,
             idempotency_key=idem_key,
         )
     elif tool_name == "create_ticket":
         client = TicketsServiceClient(service_url)
         return client.create_ticket(
-            customer_id=args["customer_id"],
-            title=args["title"],
-            body=args["body"],
-            external_ref=args.get("external_ref", ""),
+            customer_id=effective_args["customer_id"],
+            title=effective_args["title"],
+            body=effective_args["body"],
+            external_ref=effective_args.get("external_ref", ""),
             intent_id=intent_id,
             idempotency_key=idem_key,
         )

@@ -72,10 +72,21 @@ class AgentRaaSAdapter(Guard):
                     "SELECT status, result FROM dedup_slots WHERE slot_key = ?", (slot_key,)
                 )
                 row = cursor.fetchone()
-                if row and row[0] in ("completed", "claimed"):
+                if row and row[0] == "claimed":
+                    self._halted.append(
+                        HaltInfo(
+                            tool_name=tool_name,
+                            args=call_dict,
+                            reason="Slot in claimed state without result",
+                        )
+                    )
                     if row[1]:
                         return json.loads(row[1])
                     return {"status": "deduplicated_in_flight"}
+                elif row and row[0] == "completed":
+                    if row[1]:
+                        return json.loads(row[1])
+                    return {"status": "deduplicated_completed"}
 
                 # Claim slot prior to executing
                 conn.execute(

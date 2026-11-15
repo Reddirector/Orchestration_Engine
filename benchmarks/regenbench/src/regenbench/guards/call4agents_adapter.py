@@ -48,8 +48,14 @@ class Call4AgentsAdapter(Guard):
             call_kw = dict(kwargs)
             if self.use_workaround_key:
                 call_kw["c4a_key"] = self.compute_key(tool_name, args, kwargs)
-            with call4agents.run(self.run_id):
-                return c4a_decorated(*args, **call_kw)
+            try:
+                with call4agents.run(self.run_id):
+                    return c4a_decorated(*args, **call_kw)
+            except call4agents.EffectInDoubt as exc:
+                self._halted.append(
+                    HaltInfo(tool_name=tool_name, args=call_kw, reason=f"EffectInDoubt: {exc}")
+                )
+                raise
 
         return wrapped
 
