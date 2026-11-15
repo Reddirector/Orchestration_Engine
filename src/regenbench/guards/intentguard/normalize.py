@@ -1,4 +1,3 @@
-import re
 from typing import Any
 
 
@@ -35,10 +34,17 @@ def normalize_declared_args(tool_name: str, args: dict[str, Any]) -> dict[str, A
     elif tool_name == "send_email":
         res["to"] = normalize_email(args.get("to", ""))
         # Purpose can be extracted or defaulted
-        res["purpose"] = "invoice" if "invoice" in str(args.get("subject", "")).lower() else "general"
+        res["purpose"] = (
+            "invoice" if "invoice" in str(args.get("subject", "")).lower() else "general"
+        )
     elif tool_name == "create_ticket":
         res["customer_id"] = str(args.get("customer_id", "")).strip()
-        res["category"] = "billing" if "billing" in str(args.get("title", "")).lower() or "refund" in str(args.get("title", "")).lower() else "technical"
+        res["category"] = (
+            "billing"
+            if "billing" in str(args.get("title", "")).lower()
+            or "refund" in str(args.get("title", "")).lower()
+            else "technical"
+        )
     else:
         res = {k: str(v) for k, v in sorted(args.items())}
     return res

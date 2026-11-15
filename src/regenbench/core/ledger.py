@@ -1,9 +1,9 @@
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
 import json
-from pathlib import Path
 import sqlite3
-from typing import Any, Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -13,13 +13,13 @@ class EffectRecord:
     service: str
     action: str
     payload: dict[str, Any]
-    idempotency_key: Optional[str]
+    idempotency_key: str | None
     created_at: str
 
 
 class EffectLedger:
     """Append-only SQLite ledger in WAL mode to track real side effects.
-    
+
     UPDATE and DELETE are rejected via SQLite triggers.
     """
 
@@ -49,9 +49,7 @@ class EffectLedger:
                 )
                 """
             )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_effects_intent ON effects(intent_id)"
-            )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_effects_intent ON effects(intent_id)")
             # Triggers to enforce append-only guarantees
             conn.execute(
                 """
@@ -79,9 +77,9 @@ class EffectLedger:
         service: str,
         action: str,
         payload: dict[str, Any],
-        idempotency_key: Optional[str] = None,
+        idempotency_key: str | None = None,
     ) -> EffectRecord:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         payload_str = json.dumps(payload, sort_keys=True)
         with self._get_connection() as conn:
             cursor = conn.cursor()

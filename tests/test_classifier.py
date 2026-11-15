@@ -1,4 +1,3 @@
-import pytest
 from regenbench.drift.classifier import DeterministicDriftClassifier
 
 

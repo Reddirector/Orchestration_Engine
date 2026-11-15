@@ -1,7 +1,10 @@
 import functools
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional
-from idempotent_tools import idempotent, SQLiteBackend
+from typing import Any
+
+from idempotent_tools import SQLiteBackend, idempotent
+
 from regenbench.guards.base import Guard, HaltInfo
 
 
@@ -17,8 +20,8 @@ class IdempotentToolsAdapter(Guard):
         """
         self.mode = mode
         self.run_id: str = "default_run"
-        self.workdir: Optional[Path] = None
-        self.backend: Optional[SQLiteBackend] = None
+        self.workdir: Path | None = None
+        self.backend: SQLiteBackend | None = None
         self._halted: list[HaltInfo] = []
 
     def setup(self, run_id: str, workdir: Path) -> None:
@@ -31,11 +34,13 @@ class IdempotentToolsAdapter(Guard):
         self,
         tool_name: str,
         fn: Callable[..., Any],
-        intent_schema: Optional[dict[str, Any]] = None,
+        intent_schema: dict[str, Any] | None = None,
     ) -> Callable[..., Any]:
         if self.mode == "context":
             # Workaround G3b: keying ignores drifted argument payload by using step/task context
-            key_fn = lambda f, a, kw, ctx: f"{self.run_id}:{tool_name}:{ctx}"
+            def key_fn(f, a, kw, ctx):
+                return f"{self.run_id}:{tool_name}:{ctx}"
+
             decorated = idempotent(
                 fn,
                 backend=self.backend,

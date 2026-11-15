@@ -1,6 +1,7 @@
-from dataclasses import dataclass
 import random
-from typing import Any, Tuple
+from dataclasses import dataclass
+from typing import Any
+
 from regenbench.core.intents import Intent
 
 
@@ -160,9 +161,7 @@ class ScenarioGenerator:
             seed=seed,
             target_step=target_step,
             control_step=ctrl_step,
-            context_prompts=[
-                f"Send an invoice email to {recipient} with subject '{subject}'."
-            ],
+            context_prompts=[f"Send an invoice email to {recipient} with subject '{subject}'."],
         )
 
     @staticmethod

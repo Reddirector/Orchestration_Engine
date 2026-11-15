@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 from typing import Any
+
 import yaml
+
 from regenbench.analysis.stats import wilson_score_interval
 from regenbench.harness.runner import TrialRunner
 
@@ -30,14 +32,21 @@ class MatrixRunner:
         # Aggregate stats: key = (guard, drift_type) -> list of results
         cell_stats: dict[tuple[str, str], dict[str, int]] = {}
 
-        total_trials = len(guards) * len(scenarios) * len(drift_types) * num_seeds
+        len(guards) * len(scenarios) * len(drift_types) * num_seeds
         current = 0
 
         for guard in guards:
             for drift in drift_types:
                 cell_key = (guard, drift)
                 if cell_key not in cell_stats:
-                    cell_stats[cell_key] = {"trials": 0, "dup": 0, "ok": 0, "halt": 0, "lost": 0, "false_block": 0}
+                    cell_stats[cell_key] = {
+                        "trials": 0,
+                        "dup": 0,
+                        "ok": 0,
+                        "halt": 0,
+                        "lost": 0,
+                        "false_block": 0,
+                    }
 
                 for sc in scenarios:
                     for seed in range(num_seeds):
@@ -67,15 +76,17 @@ class MatrixRunner:
             dups = counts["dup"]
             leak_rate = dups / n if n > 0 else 0.0
             ci_low, ci_high = wilson_score_interval(dups, n)
-            summary_rows.append({
-                "guard": g,
-                "drift_type": d,
-                "trials": n,
-                "dup_count": dups,
-                "leak_rate": round(leak_rate, 4),
-                "ci_95_low": round(ci_low, 4),
-                "ci_95_high": round(ci_high, 4),
-            })
+            summary_rows.append(
+                {
+                    "guard": g,
+                    "drift_type": d,
+                    "trials": n,
+                    "dup_count": dups,
+                    "leak_rate": round(leak_rate, 4),
+                    "ci_95_low": round(ci_low, 4),
+                    "ci_95_high": round(ci_high, 4),
+                }
+            )
 
         summary_path = self.output_dir / "pilot_summary.json"
         with open(summary_path, "w") as f:

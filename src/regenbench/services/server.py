@@ -1,17 +1,17 @@
-from dataclasses import dataclass
-from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
-from pathlib import Path
 import socket
 import threading
 import time
-from typing import Any, Callable, Optional
+from dataclasses import dataclass
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any
+
 from regenbench.core.ledger import EffectLedger
 
 
 @dataclass
 class FaultConfig:
-    crash_point: Optional[str] = None  # e.g., "CP-B1" or "CP-E"
+    crash_point: str | None = None  # e.g., "CP-B1" or "CP-E"
     delay_seconds: float = 0.0
 
 
@@ -77,7 +77,9 @@ class MockServiceHandler(BaseHTTPRequestHandler):
 
         if self.fault_config.crash_point == "CP-B1":
             try:
-                self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, b'\x01\x00\x00\x00\x00\x00\x00\x00')
+                self.connection.setsockopt(
+                    socket.SOL_SOCKET, socket.SO_LINGER, b"\x01\x00\x00\x00\x00\x00\x00\x00"
+                )
                 self.connection.close()
             except Exception:
                 pass
@@ -121,7 +123,7 @@ class MockServicesServer:
 
         self.httpd = HTTPServer((host, port), CustomHandler)
         self.port = self.httpd.server_port
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
 
     def start(self) -> None:
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)

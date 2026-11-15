@@ -1,8 +1,9 @@
 import math
-from typing import Tuple
 
 
-def wilson_score_interval(successes: int, trials: int, confidence: float = 0.95) -> Tuple[float, float]:
+def wilson_score_interval(
+    successes: int, trials: int, confidence: float = 0.95
+) -> tuple[float, float]:
     """
     Computes Wilson score 95% confidence interval for a proportion.
     Rule of three: if successes == 0, upper bound is approximately 3 / trials.

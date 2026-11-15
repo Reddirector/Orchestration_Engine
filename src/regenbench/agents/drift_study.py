@@ -1,9 +1,8 @@
 import json
 from pathlib import Path
-import random
 from typing import Any
+
 from regenbench.agents.ollama_client import OllamaClient
-from regenbench.analysis.stats import wilson_score_interval
 from regenbench.core.scenario import ScenarioGenerator
 from regenbench.drift.classifier import DeterministicDriftClassifier
 
@@ -28,58 +27,64 @@ class NaturalDriftStudy:
         drift_counts: dict[str, int] = {}
         total_evals = 0
 
-        tools_s1 = [{
-            "type": "function",
-            "function": {
-                "name": "charge_card",
-                "description": "Charge card for order",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "order_id": {"type": "string"},
-                        "amount": {"type": "number"},
-                        "currency": {"type": "string"},
-                        "reference": {"type": "string"}
+        tools_s1 = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "charge_card",
+                    "description": "Charge card for order",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "order_id": {"type": "string"},
+                            "amount": {"type": "number"},
+                            "currency": {"type": "string"},
+                            "reference": {"type": "string"},
+                        },
+                        "required": ["order_id", "amount", "currency"],
                     },
-                    "required": ["order_id", "amount", "currency"]
-                }
+                },
             }
-        }]
+        ]
 
-        tools_s2 = [{
-            "type": "function",
-            "function": {
-                "name": "send_email",
-                "description": "Send email",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "to": {"type": "string"},
-                        "subject": {"type": "string"},
-                        "body": {"type": "string"}
+        tools_s2 = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "send_email",
+                    "description": "Send email",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "to": {"type": "string"},
+                            "subject": {"type": "string"},
+                            "body": {"type": "string"},
+                        },
+                        "required": ["to", "subject", "body"],
                     },
-                    "required": ["to", "subject", "body"]
-                }
+                },
             }
-        }]
+        ]
 
-        tools_s3 = [{
-            "type": "function",
-            "function": {
-                "name": "create_ticket",
-                "description": "Create ticket",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "customer_id": {"type": "string"},
-                        "title": {"type": "string"},
-                        "body": {"type": "string"},
-                        "external_ref": {"type": "string"}
+        tools_s3 = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "create_ticket",
+                    "description": "Create ticket",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "customer_id": {"type": "string"},
+                            "title": {"type": "string"},
+                            "body": {"type": "string"},
+                            "external_ref": {"type": "string"},
+                        },
+                        "required": ["customer_id", "title", "body"],
                     },
-                    "required": ["customer_id", "title", "body"]
-                }
+                },
             }
-        }]
+        ]
 
         for sc_id in scenarios:
             tools = tools_s1 if sc_id == "S1" else (tools_s2 if sc_id == "S2" else tools_s3)
@@ -92,11 +97,23 @@ class NaturalDriftStudy:
 
                         messages = [{"role": "user", "content": prompt}]
                         if cond == "C1":
-                            messages.append({"role": "system", "content": "Note: Process resumed after crash."})
+                            messages.append(
+                                {"role": "system", "content": "Note: Process resumed after crash."}
+                            )
                         elif cond == "C2":
-                            messages.append({"role": "system", "content": "Summary: Previous attempt initiated."})
+                            messages.append(
+                                {
+                                    "role": "system",
+                                    "content": "Summary: Previous attempt initiated.",
+                                }
+                            )
                         elif cond == "C4":
-                            messages.append({"role": "system", "content": f"Prior tool invocation: {json.dumps(orig_args)}"})
+                            messages.append(
+                                {
+                                    "role": "system",
+                                    "content": f"Prior tool invocation: {json.dumps(orig_args)}",
+                                }
+                            )
 
                         try:
                             regen_call = self.client.generate_tool_call(
@@ -105,7 +122,9 @@ class NaturalDriftStudy:
                                 tools=tools,
                                 temperature=temp,
                             )
-                            regen_args = regen_call.get("arguments", {}) if regen_call else orig_args
+                            regen_args = (
+                                regen_call.get("arguments", {}) if regen_call else orig_args
+                            )
                         except Exception:
                             regen_args = orig_args
 
@@ -113,24 +132,30 @@ class NaturalDriftStudy:
                         drift_counts[drift_cat] = drift_counts.get(drift_cat, 0) + 1
                         total_evals += 1
 
-                        results_records.append({
-                            "scenario": sc_id,
-                            "temperature": temp,
-                            "condition": cond,
-                            "seed": seed,
-                            "original": orig_args,
-                            "regenerated": regen_args,
-                            "drift_category": drift_cat,
-                        })
+                        results_records.append(
+                            {
+                                "scenario": sc_id,
+                                "temperature": temp,
+                                "condition": cond,
+                                "seed": seed,
+                                "original": orig_args,
+                                "regenerated": regen_args,
+                                "drift_category": drift_cat,
+                            }
+                        )
 
         summary_file = self.output_dir / f"natural_drift_{model_name.replace(':', '_')}.json"
         with open(summary_file, "w") as f:
-            json.dump({
-                "model": model_name,
-                "total_evals": total_evals,
-                "drift_counts": drift_counts,
-                "records": results_records,
-            }, f, indent=2)
+            json.dump(
+                {
+                    "model": model_name,
+                    "total_evals": total_evals,
+                    "drift_counts": drift_counts,
+                    "records": results_records,
+                },
+                f,
+                indent=2,
+            )
 
         return {
             "model": model_name,

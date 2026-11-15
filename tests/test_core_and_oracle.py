@@ -1,7 +1,10 @@
-import pytest
+import sqlite3
 from pathlib import Path
+
+import pytest
+
 from regenbench.core.ledger import EffectLedger
-from regenbench.core.outcomes import OutcomeOracle, TargetOutcome, ControlOutcome
+from regenbench.core.outcomes import ControlOutcome, OutcomeOracle, TargetOutcome
 from regenbench.core.scenario import ScenarioGenerator
 
 
@@ -149,7 +152,6 @@ def test_scenario_generator_determinism():
     assert s3.target_step.tool_name == "create_ticket"
     assert s3.target_step.intent.scenario_id == "S3"
 
-import sqlite3
 
 def test_ledger_append_only_enforced_by_trigger(tmp_path: Path):
     db_file = tmp_path / "ledger_triggers.db"
@@ -164,14 +166,12 @@ def test_ledger_append_only_enforced_by_trigger(tmp_path: Path):
     assert ledger.count_effects("intent-1") == 1
 
     # Attempt UPDATE
-    with pytest.raises(sqlite3.DatabaseError):
-        with ledger._get_connection() as conn:
-            conn.execute("UPDATE effects SET action = 'hacked' WHERE id = ?", (r1.id,))
+    with pytest.raises(sqlite3.DatabaseError), ledger._get_connection() as conn:
+        conn.execute("UPDATE effects SET action = 'hacked' WHERE id = ?", (r1.id,))
 
     # Attempt DELETE
-    with pytest.raises(sqlite3.DatabaseError):
-        with ledger._get_connection() as conn:
-            conn.execute("DELETE FROM effects WHERE id = ?", (r1.id,))
+    with pytest.raises(sqlite3.DatabaseError), ledger._get_connection() as conn:
+        conn.execute("DELETE FROM effects WHERE id = ?", (r1.id,))
 
     # Row count unchanged
     assert ledger.count_effects("intent-1") == 1
@@ -218,4 +218,6 @@ def test_scenario_distinct_arguments_across_300_seeds():
             # Serialize target step args
             args_key = tuple(sorted((k, str(v)) for k, v in sc.target_step.args.items()))
             seen_args.add(args_key)
-        assert len(seen_args) >= 250, f"{scenario_id} produced only {len(seen_args)} distinct arg sets across 300 seeds"
+        assert len(seen_args) >= 250, (
+            f"{scenario_id} produced only {len(seen_args)} distinct arg sets across 300 seeds"
+        )

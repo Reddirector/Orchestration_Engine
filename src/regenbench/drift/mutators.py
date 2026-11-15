@@ -1,7 +1,6 @@
 import copy
 import random
 from typing import Any
-from regenbench.drift.taxonomy import DriftType, NegativeType
 
 
 class DriftMutator:

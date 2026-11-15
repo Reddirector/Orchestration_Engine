@@ -1,5 +1,5 @@
-import json
-from typing import Any, Optional
+from typing import Any
+
 import httpx
 
 
@@ -14,7 +14,7 @@ class OllamaClient:
         tools: list[dict[str, Any]],
         temperature: float = 0.0,
         timeout: float = 30.0,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         url = f"{self.base_url}/api/chat"
         payload = {
             "model": model,

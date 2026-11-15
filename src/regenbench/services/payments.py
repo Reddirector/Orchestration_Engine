@@ -1,4 +1,5 @@
-from typing import Any, Optional
+from typing import Any
+
 import httpx
 
 
@@ -9,11 +10,11 @@ class PaymentsServiceClient:
     def charge_card(
         self,
         order_id: str,
-        amount: int | float | str,
+        amount: float | str,
         currency: str,
         reference: str,
         intent_id: str,
-        idempotency_key: Optional[str] = None,
+        idempotency_key: str | None = None,
         timeout: float = 5.0,
     ) -> dict[str, Any]:
         url = f"{self.base_url}/payments/charge"

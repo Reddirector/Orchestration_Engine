@@ -1,5 +1,7 @@
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
+
 from regenbench.guards.base import Guard, HaltInfo
 
 
@@ -15,7 +17,7 @@ class NoGuard(Guard):
         self,
         tool_name: str,
         fn: Callable[..., Any],
-        intent_schema: Optional[dict[str, Any]] = None,
+        intent_schema: dict[str, Any] | None = None,
     ) -> Callable[..., Any]:
         return fn
 

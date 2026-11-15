@@ -1,9 +1,11 @@
 import functools
 import hashlib
 import json
-from pathlib import Path
 import sqlite3
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
 from regenbench.guards.base import Guard, HaltInfo
 from regenbench.guards.intentguard.normalize import normalize_declared_args
 
@@ -14,12 +16,13 @@ class IntentGuard(Guard):
     1. Intent Key: normalizes declared arguments and hashes (run_id + tool + normalized_declared_args).
     2. Reconcile-before-retry: checks if effect already committed prior to re-executing.
     """
+
     name: str = "G4_intentguard"
     version: str = "1.0.0"
 
     def __init__(self):
         self.run_id: str = "default_run"
-        self.workdir: Optional[Path] = None
+        self.workdir: Path | None = None
         self._halted: list[HaltInfo] = []
 
     def setup(self, run_id: str, workdir: Path) -> None:
@@ -43,18 +46,26 @@ class IntentGuard(Guard):
         self,
         tool_name: str,
         fn: Callable[..., Any],
-        intent_schema: Optional[dict[str, Any]] = None,
+        intent_schema: dict[str, Any] | None = None,
     ) -> Callable[..., Any]:
         @functools.wraps(fn)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
-            call_dict = kwargs if kwargs else (args[0] if args and isinstance(args[0], dict) else {"args": args})
+            call_dict = (
+                kwargs
+                if kwargs
+                else (args[0] if args and isinstance(args[0], dict) else {"args": args})
+            )
             norm_args = normalize_declared_args(tool_name, call_dict)
             norm_str = json.dumps(norm_args, sort_keys=True)
-            intent_key = hashlib.sha256(f"{self.run_id}:{tool_name}:{norm_str}".encode("utf-8")).hexdigest()
+            intent_key = hashlib.sha256(
+                f"{self.run_id}:{tool_name}:{norm_str}".encode()
+            ).hexdigest()
 
             with sqlite3.connect(str(self.db_path)) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT state, result FROM intent_store WHERE intent_key = ?", (intent_key,))
+                cursor.execute(
+                    "SELECT state, result FROM intent_store WHERE intent_key = ?", (intent_key,)
+                )
                 row = cursor.fetchone()
                 if row:
                     state, res_str = row[0], row[1]
@@ -76,7 +87,10 @@ class IntentGuard(Guard):
                 res = fn(*args, **kwargs)
             except Exception as e:
                 with sqlite3.connect(str(self.db_path)) as conn:
-                    conn.execute("UPDATE intent_store SET state = 'DOUBT' WHERE intent_key = ?", (intent_key,))
+                    conn.execute(
+                        "UPDATE intent_store SET state = 'DOUBT' WHERE intent_key = ?",
+                        (intent_key,),
+                    )
                     conn.commit()
                 raise e
 

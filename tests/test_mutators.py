@@ -1,7 +1,7 @@
-import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
+
 from regenbench.drift.mutators import DriftMutator
-from regenbench.drift.taxonomy import DriftType, NegativeType
 
 
 def test_d0_none():

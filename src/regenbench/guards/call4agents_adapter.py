@@ -1,7 +1,10 @@
 import functools
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
+
 import call4agents
+
 from regenbench.guards.base import Guard, HaltInfo
 
 
@@ -12,7 +15,7 @@ class Call4AgentsAdapter(Guard):
     def __init__(self, use_workaround_key: bool = False):
         self.use_workaround_key = use_workaround_key
         self.run_id: str = "default_run"
-        self.workdir: Optional[Path] = None
+        self.workdir: Path | None = None
         self._halted: list[HaltInfo] = []
 
     def setup(self, run_id: str, workdir: Path) -> None:
@@ -25,7 +28,7 @@ class Call4AgentsAdapter(Guard):
         self,
         tool_name: str,
         fn: Callable[..., Any],
-        intent_schema: Optional[dict[str, Any]] = None,
+        intent_schema: dict[str, Any] | None = None,
     ) -> Callable[..., Any]:
         key_fn = None
         if self.use_workaround_key and intent_schema and "key_fn" in intent_schema:

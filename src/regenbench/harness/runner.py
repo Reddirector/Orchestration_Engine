@@ -1,10 +1,9 @@
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from typing import Any, Optional
 import uuid
+from pathlib import Path
 
 from regenbench.core.env import EnvironmentRecord
 from regenbench.core.ledger import EffectLedger
@@ -16,7 +15,7 @@ from regenbench.services.server import MockServicesServer
 class TrialRunner:
     """Runs a single trial by launching Worker 1, injecting crash, resuming with Worker 2, and calling Oracle."""
 
-    def __init__(self, results_path: Optional[Path] = None):
+    def __init__(self, results_path: Path | None = None):
         self.results_path = results_path
 
     def run_trial(
@@ -26,13 +25,11 @@ class TrialRunner:
         crash_point: str,
         drift_type: str,
         seed: int = 42,
-        workdir: Optional[Path] = None,
+        workdir: Path | None = None,
     ) -> TrialClassification:
-        clean_temp = False
         if workdir is None:
             temp_dir = tempfile.mkdtemp()
             workdir = Path(temp_dir)
-            clean_temp = True
         else:
             workdir.mkdir(parents=True, exist_ok=True)
 
@@ -57,15 +54,24 @@ class TrialRunner:
             sys.executable,
             "-m",
             "regenbench.harness.worker",
-            "--role", "worker1",
-            "--scenario", scenario_id,
-            "--seed", str(seed),
-            "--guard", guard_id,
-            "--crash-point", crash_point,
-            "--drift-type", drift_type,
-            "--run-id", run_id,
-            "--workdir", str(workdir),
-            "--service-url", server.base_url,
+            "--role",
+            "worker1",
+            "--scenario",
+            scenario_id,
+            "--seed",
+            str(seed),
+            "--guard",
+            guard_id,
+            "--crash-point",
+            crash_point,
+            "--drift-type",
+            drift_type,
+            "--run-id",
+            run_id,
+            "--workdir",
+            str(workdir),
+            "--service-url",
+            server.base_url,
         ]
 
         proc1 = subprocess.run(cmd_w1, capture_output=True, text=True)
@@ -76,15 +82,24 @@ class TrialRunner:
             sys.executable,
             "-m",
             "regenbench.harness.worker",
-            "--role", "worker2",
-            "--scenario", scenario_id,
-            "--seed", str(seed),
-            "--guard", guard_id,
-            "--crash-point", "",
-            "--drift-type", drift_type,
-            "--run-id", run_id,
-            "--workdir", str(workdir),
-            "--service-url", server.base_url,
+            "--role",
+            "worker2",
+            "--scenario",
+            scenario_id,
+            "--seed",
+            str(seed),
+            "--guard",
+            guard_id,
+            "--crash-point",
+            "",
+            "--drift-type",
+            drift_type,
+            "--run-id",
+            run_id,
+            "--workdir",
+            str(workdir),
+            "--service-url",
+            server.base_url,
         ]
 
         proc2 = subprocess.run(cmd_w2, capture_output=True, text=True)
@@ -120,7 +135,9 @@ class TrialRunner:
             "drift_type": drift_type,
             "seed": seed,
             "target_outcome": classification.target_outcome.value,
-            "control_outcome": classification.control_outcome.value if classification.control_outcome else None,
+            "control_outcome": classification.control_outcome.value
+            if classification.control_outcome
+            else None,
             "target_commits": classification.target_commits,
             "control_commits": classification.control_commits,
             "halted": classification.halted_for_human,

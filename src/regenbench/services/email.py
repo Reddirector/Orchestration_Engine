@@ -1,4 +1,5 @@
-from typing import Any, Optional
+from typing import Any
+
 import httpx
 
 
@@ -12,7 +13,7 @@ class EmailServiceClient:
         subject: str,
         body: str,
         intent_id: str,
-        idempotency_key: Optional[str] = None,
+        idempotency_key: str | None = None,
         timeout: float = 5.0,
     ) -> dict[str, Any]:
         url = f"{self.base_url}/email/send"

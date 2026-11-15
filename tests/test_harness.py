@@ -1,6 +1,6 @@
 from pathlib import Path
-import pytest
-from regenbench.core.outcomes import TargetOutcome, ControlOutcome
+
+from regenbench.core.outcomes import ControlOutcome, TargetOutcome
 from regenbench.harness.runner import TrialRunner
 
 
@@ -38,7 +38,9 @@ def test_runner_call4agents_prevents_dup_on_d0(tmp_path: Path):
     runner = TrialRunner(results_path=tmp_path / "results.jsonl")
 
     # With call4agents (G1) on D0 (identical arguments), CP-B2 resume should be deduplicated (OK)
-    res_g1_d0 = runner.run_trial("S1", "G1", "CP-B2", "D0", seed=10, workdir=tmp_path / "trial_g1_d0")
+    res_g1_d0 = runner.run_trial(
+        "S1", "G1", "CP-B2", "D0", seed=10, workdir=tmp_path / "trial_g1_d0"
+    )
     assert res_g1_d0.target_outcome == TargetOutcome.OK
     assert res_g1_d0.target_commits == 1
 
@@ -47,9 +49,12 @@ def test_runner_call4agents_leaks_on_d1_numeric_drift(tmp_path: Path):
     runner = TrialRunner(results_path=tmp_path / "results.jsonl")
 
     # With call4agents (G1) on D1 (numeric drift 10 -> 10.0), keying on exact args leaks a duplicate!
-    res_g1_d1 = runner.run_trial("S1", "G1", "CP-B2", "D1", seed=10, workdir=tmp_path / "trial_g1_d1")
+    res_g1_d1 = runner.run_trial(
+        "S1", "G1", "CP-B2", "D1", seed=10, workdir=tmp_path / "trial_g1_d1"
+    )
     assert res_g1_d1.target_outcome == TargetOutcome.DUP
     assert res_g1_d1.target_commits == 2
+
 
 def test_runner_all_phase3_guards_d0_and_d1(tmp_path: Path):
     runner = TrialRunner(results_path=tmp_path / "results_phase3.jsonl")
@@ -76,6 +81,7 @@ def test_runner_all_phase3_guards_d0_and_d1(tmp_path: Path):
     r_g5_d1 = runner.run_trial("S1", "G5", "CP-B2", "D1", seed=40, workdir=tmp_path / "t_g5_d1")
     assert r_g5_d1.target_outcome == TargetOutcome.OK
     assert r_g5_d1.target_commits == 1
+
 
 def test_intentguard_and_analyzer_survive_drift(tmp_path: Path):
     runner = TrialRunner(results_path=tmp_path / "results_g4_g7.jsonl")

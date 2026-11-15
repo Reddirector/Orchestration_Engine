@@ -1,20 +1,20 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+
 from regenbench.core.ledger import EffectLedger
 
 
 class TargetOutcome(str, Enum):
-    OK = "OK"                      # Exactly 1 commit, no halt
-    DUP = "DUP"                    # >= 2 commits (unsafe)
-    LOST = "LOST"                  # 0 commits, no halt (unsafe)
-    HALT_SAFE = "HALT-SAFE"        # 1 commit, halted for human
-    HALT_STALL = "HALT-STALL"      # 0 commits, halted for human
+    OK = "OK"  # Exactly 1 commit, no halt
+    DUP = "DUP"  # >= 2 commits (unsafe)
+    LOST = "LOST"  # 0 commits, no halt (unsafe)
+    HALT_SAFE = "HALT-SAFE"  # 1 commit, halted for human
+    HALT_STALL = "HALT-STALL"  # 0 commits, halted for human
 
 
 class ControlOutcome(str, Enum):
-    OK = "OK"                      # Control action executed successfully (>= 1 commit)
-    FALSE_BLOCK = "FALSE_BLOCK"    # Legitimate distinct action falsely blocked (0 commits)
+    OK = "OK"  # Control action executed successfully (>= 1 commit)
+    FALSE_BLOCK = "FALSE_BLOCK"  # Legitimate distinct action falsely blocked (0 commits)
 
 
 @dataclass(frozen=True)
@@ -22,8 +22,8 @@ class TrialClassification:
     target_intent_id: str
     target_outcome: TargetOutcome
     target_commits: int
-    control_intent_id: Optional[str]
-    control_outcome: Optional[ControlOutcome]
+    control_intent_id: str | None
+    control_outcome: ControlOutcome | None
     control_commits: int
     halted_for_human: bool
     is_safe: bool
@@ -37,7 +37,7 @@ class OutcomeOracle:
     def classify(
         ledger: EffectLedger,
         target_intent_id: str,
-        control_intent_id: Optional[str] = None,
+        control_intent_id: str | None = None,
         halted: bool = False,
     ) -> TrialClassification:
         target_commits = ledger.count_effects(target_intent_id)
@@ -46,10 +46,10 @@ class OutcomeOracle:
             target_outcome = TargetOutcome.DUP
         elif target_commits == 1:
             target_outcome = TargetOutcome.HALT_SAFE if halted else TargetOutcome.OK
-        else: # target_commits == 0
+        else:  # target_commits == 0
             target_outcome = TargetOutcome.HALT_STALL if halted else TargetOutcome.LOST
 
-        control_outcome: Optional[ControlOutcome] = None
+        control_outcome: ControlOutcome | None = None
         control_commits = 0
         if control_intent_id:
             control_commits = ledger.count_effects(control_intent_id)
@@ -58,7 +58,11 @@ class OutcomeOracle:
             else:
                 control_outcome = ControlOutcome.FALSE_BLOCK
 
-        is_safe = target_outcome in (TargetOutcome.OK, TargetOutcome.HALT_SAFE, TargetOutcome.HALT_STALL)
+        is_safe = target_outcome in (
+            TargetOutcome.OK,
+            TargetOutcome.HALT_SAFE,
+            TargetOutcome.HALT_STALL,
+        )
         is_autonomous = (target_outcome == TargetOutcome.OK) and (
             control_outcome == ControlOutcome.OK if control_intent_id else True
         )
