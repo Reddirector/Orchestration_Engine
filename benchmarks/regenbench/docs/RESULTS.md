@@ -38,7 +38,7 @@ Across 1,260 multi-process trials (with real `os._exit` worker kills and an out-
 | **G3a (`idempotent-tools`)** | Exact Args | **0.0%** | **33.3%** | **100.0%** | **66.7%** | **66.7%** | **33.3%** |
 | **G5 (StepKey)** | Run + Step Index | Outcomes: 450 trials in full matrix, 0 DUP, 300 OK, 60 LOST (all at CP-A), 90 FALSE_BLOCK (N1-N3 at CP-B2). |
 | **G4 (IntentGuard)** | Intent Key | **0.0%** | **0.0%** | **0.0%** | **33.3%** | **0.0%** | **0.0%** |
-| **G7 (Analyzer Baseline)** | Semantic | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** |
+| **G7 (rule-based)** | Semantic | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** |
 
 *(95% Wilson Confidence Intervals: for 0/30 cells, upper bound is 0.1000; for 10/30 cells, CI is [0.1923, 0.5122]; for 20/30 cells, CI is [0.4878, 0.8077]; for 30/30 cells, CI is [0.8865, 1.0000]).*
 

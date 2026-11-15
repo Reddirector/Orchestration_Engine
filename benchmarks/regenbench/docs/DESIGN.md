@@ -84,7 +84,7 @@ Evidence already published (verify each before citing in the final report):
 - G3a idempotent-tools: Exact-argument SHA256 keying over function name and arguments.
 - G5 StepKey: Key = run_id + per-process call index + tool name (the index restarts at 0 in a resumed worker). Argument differences are bypassed.
 - G4 IntentGuard: Semantic/business intent keying via normalized identifiers.
-- G7 SemanticAnalyzer: Reference classifier evaluating intent equivalence.
+- G7 (rule-based): Reference classifier evaluating intent equivalence.
 
 ### 5.4 Scenarios
 - S1 payments: `charge_card(order_id, amount, currency, reference)` -> intent: order_id, amount in minor units, currency

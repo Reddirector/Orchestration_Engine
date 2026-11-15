@@ -94,7 +94,7 @@ class ScenarioGenerator:
             target_step=target_step,
             control_step=ctrl_step,
             context_prompts=[
-                f"Please charge card for order {order_id} in the amount of ${amount_cents / 100:.2f} {currency}."
+                f"Please charge card for order {order_id} with amount {amount_cents} {currency} and payment reference {ref_uuid}."
             ],
         )
 
@@ -161,7 +161,9 @@ class ScenarioGenerator:
             seed=seed,
             target_step=target_step,
             control_step=ctrl_step,
-            context_prompts=[f"Send an invoice email to {recipient} with subject '{subject}'."],
+            context_prompts=[
+                f"Send an invoice email to {recipient} with subject '{subject}' and body '{body}'."
+            ],
         )
 
     @staticmethod
@@ -170,6 +172,7 @@ class ScenarioGenerator:
         cust_id = f"cust_{rng.randint(1000, 9999)}"
         category = "billing"
         title = f"Refund inquiry from {cust_id}"
+        body = "Customer is requesting clarification on last charge."
         ext_ref = f"ext-ticket-{rng.randint(100000, 999999)}"
 
         target_intent_id = f"intent-ticket-{cust_id}-{category}"
@@ -188,7 +191,7 @@ class ScenarioGenerator:
         target_args = {
             "customer_id": cust_id,
             "title": title,
-            "body": "Customer is requesting clarification on last charge.",
+            "body": body,
             "external_ref": ext_ref,
         }
         target_step = ScenarioStep(
@@ -230,7 +233,7 @@ class ScenarioGenerator:
             target_step=target_step,
             control_step=ctrl_step,
             context_prompts=[
-                f"Create a billing support ticket for customer {cust_id} regarding their refund inquiry."
+                f"Create a billing support ticket for customer {cust_id} with title '{title}', body '{body}', and external reference '{ext_ref}'."
             ],
         )
 
