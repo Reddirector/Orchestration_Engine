@@ -548,7 +548,13 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "hypothesis" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "pytest" },
     { name = "ruff" },
+    { name = "scipy" },
 ]
 
 [package.metadata]
@@ -569,7 +575,15 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "ruff", specifier = ">=0.17.5" }]
+dev = [
+    { name = "hypothesis", specifier = ">=6.124.7" },
+    { name = "matplotlib", specifier = ">=3.10.0" },
+    { name = "numpy", specifier = ">=2.2.2" },
+    { name = "pandas", specifier = ">=2.2.3" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "ruff", specifier = ">=0.17.5" },
+    { name = "scipy", specifier = ">=1.15.1" },
+]
 
 [[package]]
 name = "requests"

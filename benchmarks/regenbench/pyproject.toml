@@ -33,6 +33,12 @@ pythonpath = ["src"]
 
 [dependency-groups]
 dev = [
+    "pytest>=8.3.4",
+    "hypothesis>=6.124.7",
+    "numpy>=2.2.2",
+    "pandas>=2.2.3",
+    "scipy>=1.15.1",
+    "matplotlib>=3.10.0",
     "ruff>=0.17.5",
 ]
 
