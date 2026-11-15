@@ -36,6 +36,7 @@ Recorded versions pinned in `pyproject.toml` and `uv.lock`:
 - **Guard Freeze Point:** Guards `G4` (IntentGuard), `G5` (StepKey), and `G7` (SemanticAnalyzer) were frozen at commit `9e7efc1` on 2026-11-15 (tagged `guards-frozen` / `guards-frozen-v2` at `3e02ac8`). Subsequent commits only adjusted documented workaround adapters (`G1_workaround`, `G3b`) to extract business identifiers.
 - **Held-Out Mutator Set (D6):** The D6 held-out mutator set and 3 new variants per D1-D5 (`heldout_mutators.py`) were authored on 2026-11-15 (commit `28c7b75` in the benchmark repository, integrated in commit `48248e3`).
 - **Commit Ordering of Held-Out Mutators vs Guards:** In the benchmark repository history, the core guard implementations (G0-G3a, G5) originated in commit `a552cc2` (2026-11-14). The held-out mutator set (`heldout_mutators.py`, introducing D6 and variants) was committed subsequently in commit `28c7b75` (2026-11-15), which was then merged into the engine repository in commit `48248e3`. Registration of D6 in `DriftMutator` followed in working updates.
+- **Post-Hoc Stress Testing (D6):** D6 is a post-hoc stress test (batch compound envelope). Guards G4 and G7 were patched after inspecting D6 behavior to unwrap compound batch packaging and extract the underlying declared intent fields.
 
 ## Documented Workaround Configurations
 - **G1_workaround (`call4agents`):** Uses explicit `c4a_key` set to the business identifier (`order_id`, `to`, `customer_id`), bypassing volatile reference fields or numeric format drift.

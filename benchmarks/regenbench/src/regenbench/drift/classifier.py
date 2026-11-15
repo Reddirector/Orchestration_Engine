@@ -32,6 +32,8 @@ class DeterministicDriftClassifier:
                 try:
                     clean_orig = float(str(orig_amt).replace("$", "").replace(",", ""))
                     clean_regen = float(str(regen_amt).replace("$", "").replace(",", ""))
+                    if abs(clean_orig - 100.0 * clean_regen) < 1e-4 or abs(100.0 * clean_orig - clean_regen) < 1e-4:
+                        return "UNIT_CHANGE"
                     if abs(clean_orig - clean_regen) > 1e-4:
                         return "DIFFERENT_INTENT"
                     if (type(orig_amt) is not type(regen_amt)) or (str(orig_amt) != str(regen_amt)):

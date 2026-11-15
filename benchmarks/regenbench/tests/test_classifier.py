@@ -23,3 +23,10 @@ def test_classifier_different_intent():
     orig = {"order_id": "ord_1", "amount": 1000, "currency": "USD", "reference": "ref-1"}
     regen = {"order_id": "ord_1", "amount": 2000, "currency": "USD", "reference": "ref-1"}
     assert DeterministicDriftClassifier.classify(orig, regen) == "DIFFERENT_INTENT"
+
+
+def test_classifier_unit_change():
+    orig = {"order_id": "ord_1", "amount": 1000, "currency": "USD", "reference": "ref-1"}
+    regen = {"order_id": "ord_1", "amount": 10.0, "currency": "USD", "reference": "ref-1"}
+    assert DeterministicDriftClassifier.classify(orig, regen) == "UNIT_CHANGE"
+
