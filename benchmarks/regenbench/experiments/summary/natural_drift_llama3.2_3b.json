@@ -1,0 +1,580 @@
+{
+  "model": "llama3.2:3b",
+  "total_evals": 30,
+  "drift_counts": {
+    "DIFFERENT_INTENT": 10,
+    "D0": 20
+  },
+  "records": [
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C0",
+      "seed": 0,
+      "original": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "regenerated": {
+        "order_id": "ord_60494",
+        "amount": "99",
+        "currency": "USD",
+        "reference": ""
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C0",
+      "seed": 1,
+      "original": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "regenerated": {
+        "currency": "USD",
+        "order_id": "ord_27611",
+        "reference": "",
+        "amount": "150"
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C0",
+      "seed": 2,
+      "original": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "regenerated": {
+        "amount": "10",
+        "currency": "USD",
+        "order_id": "ord_17412",
+        "reference": ""
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C0",
+      "seed": 3,
+      "original": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "regenerated": {
+        "amount": "150",
+        "currency": "USD",
+        "order_id": "ord_41190",
+        "reference": ""
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C0",
+      "seed": 4,
+      "original": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "regenerated": {
+        "amount": "50",
+        "currency": "USD",
+        "order_id": "ord_40939",
+        "reference": ""
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C1",
+      "seed": 0,
+      "original": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "regenerated": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C1",
+      "seed": 1,
+      "original": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "regenerated": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C1",
+      "seed": 2,
+      "original": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "regenerated": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C1",
+      "seed": 3,
+      "original": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "regenerated": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C1",
+      "seed": 4,
+      "original": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "regenerated": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C4",
+      "seed": 0,
+      "original": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "regenerated": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C4",
+      "seed": 1,
+      "original": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "regenerated": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C4",
+      "seed": 2,
+      "original": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "regenerated": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C4",
+      "seed": 3,
+      "original": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "regenerated": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.0,
+      "condition": "C4",
+      "seed": 4,
+      "original": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "regenerated": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C0",
+      "seed": 0,
+      "original": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "regenerated": {
+        "amount": "99",
+        "currency": "USD",
+        "order_id": "ord_60494",
+        "reference": ""
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C0",
+      "seed": 1,
+      "original": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "regenerated": {
+        "amount": 150,
+        "currency": "USD",
+        "order_id": "ord_27611",
+        "reference": "N/A"
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C0",
+      "seed": 2,
+      "original": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "regenerated": {
+        "order_id": "ord_17412",
+        "amount": "10",
+        "currency": "USD",
+        "reference": ""
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C0",
+      "seed": 3,
+      "original": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "regenerated": {
+        "currency": "USD",
+        "order_id": "ord_41190",
+        "reference": "",
+        "amount": "150"
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C0",
+      "seed": 4,
+      "original": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "regenerated": {
+        "amount": "50",
+        "currency": "USD",
+        "order_id": "ord_40939",
+        "reference": "optional"
+      },
+      "drift_category": "DIFFERENT_INTENT"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C1",
+      "seed": 0,
+      "original": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "regenerated": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C1",
+      "seed": 1,
+      "original": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "regenerated": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C1",
+      "seed": 2,
+      "original": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "regenerated": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C1",
+      "seed": 3,
+      "original": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "regenerated": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C1",
+      "seed": 4,
+      "original": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "regenerated": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C4",
+      "seed": 0,
+      "original": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "regenerated": {
+        "order_id": "ord_60494",
+        "amount": 9900,
+        "currency": "USD",
+        "reference": "ref-pay-142450"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C4",
+      "seed": 1,
+      "original": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "regenerated": {
+        "order_id": "ord_27611",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-988598"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C4",
+      "seed": 2,
+      "original": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "regenerated": {
+        "order_id": "ord_17412",
+        "amount": 1000,
+        "currency": "USD",
+        "reference": "ref-pay-188994"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C4",
+      "seed": 3,
+      "original": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "regenerated": {
+        "order_id": "ord_41190",
+        "amount": 15000,
+        "currency": "USD",
+        "reference": "ref-pay-670665"
+      },
+      "drift_category": "D0"
+    },
+    {
+      "scenario": "S1",
+      "temperature": 0.7,
+      "condition": "C4",
+      "seed": 4,
+      "original": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "regenerated": {
+        "order_id": "ord_40939",
+        "amount": 5000,
+        "currency": "USD",
+        "reference": "ref-pay-208177"
+      },
+      "drift_category": "D0"
+    }
+  ]
+}

@@ -1,0 +1,380 @@
+[
+  {
+    "guard": "G0",
+    "drift_type": "D0",
+    "trials": 30,
+    "dup_count": 30,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.8865,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G0",
+    "drift_type": "D1",
+    "trials": 30,
+    "dup_count": 30,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.8865,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G0",
+    "drift_type": "D2",
+    "trials": 30,
+    "dup_count": 30,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.8865,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G0",
+    "drift_type": "D3",
+    "trials": 30,
+    "dup_count": 30,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.8865,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G0",
+    "drift_type": "D4",
+    "trials": 30,
+    "dup_count": 30,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.8865,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G0",
+    "drift_type": "D5",
+    "trials": 30,
+    "dup_count": 30,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.8865,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G1",
+    "drift_type": "D0",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G1",
+    "drift_type": "D1",
+    "trials": 30,
+    "dup_count": 10,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.1923,
+    "ci_95_high": 0.5122
+  },
+  {
+    "guard": "G1",
+    "drift_type": "D2",
+    "trials": 30,
+    "dup_count": 30,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.8865,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G1",
+    "drift_type": "D3",
+    "trials": 30,
+    "dup_count": 20,
+    "leak_rate": 0.6667,
+    "ci_95_low": 0.4878,
+    "ci_95_high": 0.8077
+  },
+  {
+    "guard": "G1",
+    "drift_type": "D4",
+    "trials": 30,
+    "dup_count": 20,
+    "leak_rate": 0.6667,
+    "ci_95_low": 0.4878,
+    "ci_95_high": 0.8077
+  },
+  {
+    "guard": "G1",
+    "drift_type": "D5",
+    "trials": 30,
+    "dup_count": 10,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.1923,
+    "ci_95_high": 0.5122
+  },
+  {
+    "guard": "G2",
+    "drift_type": "D0",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G2",
+    "drift_type": "D1",
+    "trials": 30,
+    "dup_count": 10,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.1923,
+    "ci_95_high": 0.5122
+  },
+  {
+    "guard": "G2",
+    "drift_type": "D2",
+    "trials": 30,
+    "dup_count": 30,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.8865,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G2",
+    "drift_type": "D3",
+    "trials": 30,
+    "dup_count": 20,
+    "leak_rate": 0.6667,
+    "ci_95_low": 0.4878,
+    "ci_95_high": 0.8077
+  },
+  {
+    "guard": "G2",
+    "drift_type": "D4",
+    "trials": 30,
+    "dup_count": 20,
+    "leak_rate": 0.6667,
+    "ci_95_low": 0.4878,
+    "ci_95_high": 0.8077
+  },
+  {
+    "guard": "G2",
+    "drift_type": "D5",
+    "trials": 30,
+    "dup_count": 10,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.1923,
+    "ci_95_high": 0.5122
+  },
+  {
+    "guard": "G3a",
+    "drift_type": "D0",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G3a",
+    "drift_type": "D1",
+    "trials": 30,
+    "dup_count": 10,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.1923,
+    "ci_95_high": 0.5122
+  },
+  {
+    "guard": "G3a",
+    "drift_type": "D2",
+    "trials": 30,
+    "dup_count": 30,
+    "leak_rate": 1.0,
+    "ci_95_low": 0.8865,
+    "ci_95_high": 1.0
+  },
+  {
+    "guard": "G3a",
+    "drift_type": "D3",
+    "trials": 30,
+    "dup_count": 20,
+    "leak_rate": 0.6667,
+    "ci_95_low": 0.4878,
+    "ci_95_high": 0.8077
+  },
+  {
+    "guard": "G3a",
+    "drift_type": "D4",
+    "trials": 30,
+    "dup_count": 20,
+    "leak_rate": 0.6667,
+    "ci_95_low": 0.4878,
+    "ci_95_high": 0.8077
+  },
+  {
+    "guard": "G3a",
+    "drift_type": "D5",
+    "trials": 30,
+    "dup_count": 10,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.1923,
+    "ci_95_high": 0.5122
+  },
+  {
+    "guard": "G5",
+    "drift_type": "D0",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G5",
+    "drift_type": "D1",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G5",
+    "drift_type": "D2",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G5",
+    "drift_type": "D3",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G5",
+    "drift_type": "D4",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G5",
+    "drift_type": "D5",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G4",
+    "drift_type": "D0",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G4",
+    "drift_type": "D1",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G4",
+    "drift_type": "D2",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G4",
+    "drift_type": "D3",
+    "trials": 30,
+    "dup_count": 10,
+    "leak_rate": 0.3333,
+    "ci_95_low": 0.1923,
+    "ci_95_high": 0.5122
+  },
+  {
+    "guard": "G4",
+    "drift_type": "D4",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G4",
+    "drift_type": "D5",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G7",
+    "drift_type": "D0",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G7",
+    "drift_type": "D1",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G7",
+    "drift_type": "D2",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G7",
+    "drift_type": "D3",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G7",
+    "drift_type": "D4",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  },
+  {
+    "guard": "G7",
+    "drift_type": "D5",
+    "trials": 30,
+    "dup_count": 0,
+    "leak_rate": 0.0,
+    "ci_95_low": 0.0,
+    "ci_95_high": 0.1
+  }
+]
