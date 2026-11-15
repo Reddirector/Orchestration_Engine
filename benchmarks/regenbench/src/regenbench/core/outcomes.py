@@ -29,6 +29,9 @@ class TrialClassification:
     halted_for_human: bool
     is_safe: bool
     is_autonomous: bool
+    requests_w1: int = 0
+    requests_w2: int = 0
+    task_runner_invocations_w2: int = 0
 
 
 class OutcomeOracle:
@@ -40,6 +43,9 @@ class OutcomeOracle:
         target_intent_id: str,
         control_intent_id: str | None = None,
         halted: bool = False,
+        requests_w1: int = 0,
+        requests_w2: int = 0,
+        task_runner_invocations_w2: int = 0,
     ) -> TrialClassification:
         target_commits = ledger.count_effects(target_intent_id)
 
@@ -78,4 +84,7 @@ class OutcomeOracle:
             halted_for_human=halted,
             is_safe=is_safe,
             is_autonomous=is_autonomous,
+            requests_w1=requests_w1,
+            requests_w2=requests_w2,
+            task_runner_invocations_w2=task_runner_invocations_w2,
         )

@@ -50,6 +50,7 @@ class TrialRunner:
         scenario = ScenarioGenerator.generate(scenario_id, seed=seed)
 
         # 1. Spawn Worker 1 in separate OS process
+        server.set_phase("w1")
         cmd_w1 = [
             sys.executable,
             "-m",
@@ -78,6 +79,7 @@ class TrialRunner:
         worker1_exit_code = proc1.returncode
 
         # 2. Spawn Worker 2 in separate OS process (resume)
+        server.set_phase("w2")
         cmd_w2 = [
             sys.executable,
             "-m",
@@ -119,6 +121,14 @@ class TrialRunner:
             except Exception:
                 pass
 
+        invocations_file = workdir / "worker2_task_runner_invocations.txt"
+        task_runner_invocations_w2 = 0
+        if invocations_file.exists():
+            try:
+                task_runner_invocations_w2 = int(invocations_file.read_text().strip())
+            except Exception:
+                pass
+
         # 3. Classify outcome via Oracle
         if drift_type in ("N1", "N2", "N3"):
             n_intent_id = f"{scenario.target_step.intent.intent_id}_{drift_type}"
@@ -128,6 +138,9 @@ class TrialRunner:
 
             ctrl_commits = ledger.count_effects(scenario.control_step.intent.intent_id)
             ctrl_outcome = ControlOutcome.OK if ctrl_commits >= 1 else ControlOutcome.FALSE_BLOCK
+
+            req_w1 = ledger.count_requests(scenario.target_step.intent.intent_id, phase="w1")
+            req_w2 = ledger.count_requests(n_intent_id, phase="w2")
 
             classification = TrialClassification(
                 target_intent_id=n_intent_id,
@@ -139,13 +152,22 @@ class TrialRunner:
                 halted_for_human=halted,
                 is_safe=(target_outcome == TargetOutcome.OK),
                 is_autonomous=(target_outcome == TargetOutcome.OK and ctrl_outcome == ControlOutcome.OK),
+                requests_w1=req_w1,
+                requests_w2=req_w2,
+                task_runner_invocations_w2=task_runner_invocations_w2,
             )
         else:
+            req_w1 = ledger.count_requests(scenario.target_step.intent.intent_id, phase="w1")
+            req_w2 = ledger.count_requests(scenario.target_step.intent.intent_id, phase="w2")
+
             classification = OutcomeOracle.classify(
                 ledger=ledger,
                 target_intent_id=scenario.target_step.intent.intent_id,
                 control_intent_id=scenario.control_step.intent.intent_id,
                 halted=halted,
+                requests_w1=req_w1,
+                requests_w2=req_w2,
+                task_runner_invocations_w2=task_runner_invocations_w2,
             )
 
         result_row = {
@@ -161,6 +183,9 @@ class TrialRunner:
             else None,
             "target_commits": classification.target_commits,
             "control_commits": classification.control_commits,
+            "requests_w1": classification.requests_w1,
+            "requests_w2": classification.requests_w2,
+            "task_runner_invocations_w2": classification.task_runner_invocations_w2,
             "halted": classification.halted_for_human,
             "worker1_exit_code": worker1_exit_code,
             "worker2_exit_code": worker2_exit_code,

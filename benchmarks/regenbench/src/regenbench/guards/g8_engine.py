@@ -28,6 +28,8 @@ class G8EngineGuard(Guard):
         self._halted: list[HaltInfo] = []
         self._step_counter: int = 0
         self.db_path: Path | None = None
+        self._resumed: bool = False
+        self._task_runner_invocations_w2: int = 0
 
     def setup(self, run_id: str, workdir: Path) -> None:
         self.run_id = run_id
@@ -39,6 +41,7 @@ class G8EngineGuard(Guard):
     def on_resume(self, run_id: str) -> None:
         self.run_id = run_id
         self._step_counter = 0
+        self._resumed = True
         if self.db_path and self.db_path.exists():
             conn = get_connection(self.db_path)
             try:
@@ -105,6 +108,14 @@ class G8EngineGuard(Guard):
             exec_err: list[Exception] = []
 
             def task_runner(t: Task) -> TaskResult:
+                if self._resumed and self.workdir:
+                    self._task_runner_invocations_w2 += 1
+                    try:
+                        (self.workdir / "worker2_task_runner_invocations.txt").write_text(
+                            str(self._task_runner_invocations_w2)
+                        )
+                    except Exception:
+                        pass
                 try:
                     res = fn(*args, **kwargs)
                     result_container.append(res)

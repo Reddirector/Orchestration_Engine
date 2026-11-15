@@ -19,6 +19,7 @@ class MockServiceHandler(BaseHTTPRequestHandler):
     ledger: EffectLedger
     fault_config: FaultConfig
     server_idempotency_cache: dict[str, dict[str, Any]] = {}
+    current_phase: str = "w1"
 
     def log_message(self, format: str, *args: Any) -> None:
         pass
@@ -35,6 +36,8 @@ class MockServiceHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'{"error": "Missing X-Intent-Id header"}')
             return
+
+        self.ledger.record_request(intent_id=intent_id, phase=self.current_phase)
 
         idempotency_key = self.headers.get("Idempotency-Key")
 
@@ -121,9 +124,13 @@ class MockServicesServer:
         CustomHandler.fault_config = self.fault_config
         CustomHandler.server_idempotency_cache = {}
 
+        self.handler_class = CustomHandler
         self.httpd = HTTPServer((host, port), CustomHandler)
         self.port = self.httpd.server_port
         self.thread: threading.Thread | None = None
+
+    def set_phase(self, phase: str) -> None:
+        self.handler_class.current_phase = phase
 
     def start(self) -> None:
         self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)

@@ -49,6 +49,17 @@ class EffectLedger:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS service_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    intent_id TEXT NOT NULL,
+                    phase TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_requests_intent ON service_requests(intent_id)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_effects_intent ON effects(intent_id)")
             # Triggers to enforce append-only guarantees
             conn.execute(
@@ -70,6 +81,30 @@ class EffectLedger:
                 """
             )
             conn.commit()
+
+    def record_request(self, intent_id: str, phase: str = "w1") -> None:
+        now = datetime.now(UTC).isoformat()
+        with self._get_connection() as conn:
+            conn.execute(
+                "INSERT INTO service_requests (intent_id, phase, created_at) VALUES (?, ?, ?)",
+                (intent_id, phase, now),
+            )
+            conn.commit()
+
+    def count_requests(self, intent_id: str, phase: str | None = None) -> int:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            if phase is not None:
+                cursor.execute(
+                    "SELECT COUNT(*) FROM service_requests WHERE intent_id = ? AND phase = ?",
+                    (intent_id, phase),
+                )
+            else:
+                cursor.execute(
+                    "SELECT COUNT(*) FROM service_requests WHERE intent_id = ?",
+                    (intent_id,),
+                )
+            return cursor.fetchone()[0]
 
     def record_effect(
         self,
