@@ -1,16 +1,19 @@
-full_matrix:
-  guards_core: ["G0", "G1", "G2", "G3a", "G5"]
+# Reproducible Evaluation Configuration
+
+eval_matrix:
+  # Guards evaluated across full crash points and drift types
+  core_guards: ["G1", "G2", "G3a", "G4", "G5", "G7"]
   crash_points: ["CP-A", "CP-B1", "CP-B2", "CP-C", "CP-D", "CP-E"]
-  drifts: ["D0", "D1"]
-  scenarios: ["S1", "S2", "S3"]
-  seeds: 10
-  neg_controls: ["N1", "N2", "N3"]
+  core_drifts: ["D0", "D1"]
+  
+  # CP-B2 specific evaluations
+  cp_b2_drifts: ["D2a", "D2b", "D3", "D4", "D5", "D6"]
+  cp_b2_controls: ["N1", "N2", "N3"]
+  
+  # Workaround guards at CP-B2
   workaround_guards: ["G1_workaround", "G3b"]
   workaround_drifts: ["D0", "D1", "D4"]
-
-d2_split:
-  guards: ["G0", "G1", "G2", "G3a"]
-  drifts: ["D2a", "D2b"]
+  
+  # Execution parameters
   scenarios: ["S1", "S2", "S3"]
   seeds: 10
-  crash_point: "CP-B2"

@@ -7,7 +7,7 @@ A benchmark testing idempotency guards against tool-call argument drift after cr
 
 ### What Was Tested
 - **Guards Tested:**
-  - Default configurations: `G0` (None), `G1` (`call4agents`), `G2` (`agentraas`), `G3a` (`idempotent-tools`), `G4` (`IntentGuard`), `G5` (`StepKey`), `G7 (rule-based)` (`SemanticAnalyzer`).
+  - Default configurations: `G1` (`call4agents`), `G2` (`agentraas`), `G3a` (`idempotent-tools`), `G4` (`IntentGuard`), `G5` (`StepKey`), `G7 (rule-based)` (`SemanticAnalyzer`).
   - Workaround configurations: `G1_workaround` (explicit business identifier key on `call4agents`), `G3b` (explicit business identifier key on `idempotent-tools`).
 - **Crash Points Evaluated (verbatim definitions from docs/DESIGN.md):**
   - CP-A: Guard recorded intent, service not yet called
@@ -19,7 +19,9 @@ A benchmark testing idempotency guards against tool-call argument drift after cr
   - `D0`: Exact argument replay.
   - `D1`: Numeric format and scale variation.
   - `D2a (key reorder)` and `D2b (string padding)`: Structural noise split.
+  - `D3`: Field re-ordering / omission.
   - `D4`: Volatile reference UUID and nonce regeneration.
+  - `D5`: Type casting / stringification.
   - `D6 (post-hoc)`: Batch compound envelope packaging.
   - Negative controls: `N1` (altered value), `N2` (altered recipient/customer), `N3` (distinct transaction intent).
 
@@ -28,58 +30,47 @@ All counts below derive from the committed experiment summary files (`full_resul
 
 | guard | config | crash point | drift/control type | trials | mutated | dup | ok | halt | lost | false_block |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| G0 | default | CP-A | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
-| G0 | default | CP-A | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
-| G0 | default | CP-B1 | D0 | 30 | n/a | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-B1 | D1 | 30 | 10 | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-B2 | D0 | 30 | n/a | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-B2 | D1 | 30 | 10 | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-B2 | D2a (key reorder) | 30 | 30 | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-B2 | D2b (string padding) | 30 | 30 | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-B2 | N1 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
-| G0 | default | CP-B2 | N2 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
-| G0 | default | CP-B2 | N3 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
-| G0 | default | CP-C | D0 | 30 | n/a | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-C | D1 | 30 | 10 | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-D | D0 | 30 | n/a | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-D | D1 | 30 | 10 | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-E | D0 | 30 | n/a | 30 | 0 | 0 | 0 | 0 |
-| G0 | default | CP-E | D1 | 30 | 10 | 30 | 0 | 0 | 0 | 0 |
 | G1 | default | CP-A | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
 | G1 | default | CP-A | D1 | 30 | 10 | 0 | 10 | 20 | 0 | 0 |
 | G1 | default | CP-B1 | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
-| G1 | default | CP-B1 | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
+| G1 | default | CP-B1 | D1 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
 | G1 | default | CP-B2 | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
-| G1 | default | CP-B2 | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
-| G1 | default | CP-B2 | D2a (key reorder) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G1 | default | CP-B2 | D1 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
+| G1 | default | CP-B2 | D2a (key reorder) | 30 | 30 | 0 | 0 | 30 | 0 | 0 |
 | G1 | default | CP-B2 | D2b (string padding) | 30 | 30 | 30 | 0 | 0 | 0 | 0 |
+| G1 | default | CP-B2 | D3 | 30 | 20 | 20 | 0 | 10 | 0 | 0 |
+| G1 | default | CP-B2 | D4 | 30 | 20 | 20 | 0 | 10 | 0 | 0 |
+| G1 | default | CP-B2 | D5 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
 | G1 | default | CP-B2 | D6 (post-hoc) | 30 | 30 | 30 | 0 | 0 | 0 | 0 |
 | G1 | default | CP-B2 | N1 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
 | G1 | default | CP-B2 | N2 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
 | G1 | default | CP-B2 | N3 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G1 | default | CP-C | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
-| G1 | default | CP-C | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
+| G1 | default | CP-C | D1 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
 | G1 | default | CP-D | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G1 | default | CP-D | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
 | G1 | default | CP-E | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G1 | default | CP-E | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
-| G1_workaround | workaround | CP-B2 | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
-| G1_workaround | workaround | CP-B2 | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
-| G1_workaround | workaround | CP-B2 | D4 | 30 | 20 | 0 | 30 | 0 | 0 | 0 |
+| G1_workaround | workaround | CP-B2 | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
+| G1_workaround | workaround | CP-B2 | D1 | 30 | 10 | 0 | 2 | 28 | 0 | 0 |
+| G1_workaround | workaround | CP-B2 | D4 | 30 | 20 | 0 | 20 | 10 | 0 | 0 |
 | G2 | default | CP-A | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
 | G2 | default | CP-A | D1 | 30 | 10 | 0 | 10 | 20 | 0 | 0 |
 | G2 | default | CP-B1 | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
-| G2 | default | CP-B1 | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
+| G2 | default | CP-B1 | D1 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
 | G2 | default | CP-B2 | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
-| G2 | default | CP-B2 | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
-| G2 | default | CP-B2 | D2a (key reorder) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G2 | default | CP-B2 | D1 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
+| G2 | default | CP-B2 | D2a (key reorder) | 30 | 30 | 0 | 0 | 30 | 0 | 0 |
 | G2 | default | CP-B2 | D2b (string padding) | 30 | 30 | 30 | 0 | 0 | 0 | 0 |
+| G2 | default | CP-B2 | D3 | 30 | 20 | 20 | 0 | 10 | 0 | 0 |
+| G2 | default | CP-B2 | D4 | 30 | 20 | 20 | 0 | 10 | 0 | 0 |
+| G2 | default | CP-B2 | D5 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
 | G2 | default | CP-B2 | D6 (post-hoc) | 30 | 30 | 30 | 0 | 0 | 0 | 0 |
 | G2 | default | CP-B2 | N1 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
 | G2 | default | CP-B2 | N2 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
 | G2 | default | CP-B2 | N3 | 30 | n/a | 0 | 0 | 0 | 0 | 30 |
 | G2 | default | CP-C | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
-| G2 | default | CP-C | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
+| G2 | default | CP-C | D1 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
 | G2 | default | CP-D | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G2 | default | CP-D | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
 | G2 | default | CP-E | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
@@ -89,29 +80,57 @@ All counts below derive from the committed experiment summary files (`full_resul
 | G3a | default | CP-B1 | D0 | 30 | n/a | 30 | 0 | 0 | 0 | 0 |
 | G3a | default | CP-B1 | D1 | 30 | 10 | 30 | 0 | 0 | 0 | 0 |
 | G3a | default | CP-B2 | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
-| G3a | default | CP-B2 | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
-| G3a | default | CP-B2 | D2a (key reorder) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G3a | default | CP-B2 | D1 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
+| G3a | default | CP-B2 | D2a (key reorder) | 30 | 30 | 0 | 0 | 30 | 0 | 0 |
 | G3a | default | CP-B2 | D2b (string padding) | 30 | 30 | 30 | 0 | 0 | 0 | 0 |
+| G3a | default | CP-B2 | D3 | 30 | 20 | 20 | 0 | 10 | 0 | 0 |
+| G3a | default | CP-B2 | D4 | 30 | 20 | 20 | 0 | 10 | 0 | 0 |
+| G3a | default | CP-B2 | D5 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
 | G3a | default | CP-B2 | D6 (post-hoc) | 30 | 30 | 30 | 0 | 0 | 0 | 0 |
 | G3a | default | CP-B2 | N1 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
 | G3a | default | CP-B2 | N2 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
 | G3a | default | CP-B2 | N3 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G3a | default | CP-C | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
-| G3a | default | CP-C | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
+| G3a | default | CP-C | D1 | 30 | 10 | 10 | 0 | 20 | 0 | 0 |
 | G3a | default | CP-D | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G3a | default | CP-D | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
 | G3a | default | CP-E | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G3a | default | CP-E | D1 | 30 | 10 | 10 | 20 | 0 | 0 | 0 |
-| G3b | workaround | CP-B2 | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
-| G3b | workaround | CP-B2 | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
-| G3b | workaround | CP-B2 | D4 | 30 | 20 | 0 | 30 | 0 | 0 | 0 |
+| G3b | workaround | CP-B2 | D0 | 30 | n/a | 0 | 0 | 30 | 0 | 0 |
+| G3b | workaround | CP-B2 | D1 | 30 | 10 | 0 | 0 | 30 | 0 | 0 |
+| G3b | workaround | CP-B2 | D4 | 30 | 20 | 0 | 0 | 30 | 0 | 0 |
+| G4 | default | CP-A | D0 | 30 | n/a | 0 | 0 | 0 | 30 | 0 |
+| G4 | default | CP-A | D1 | 30 | 10 | 0 | 0 | 0 | 30 | 0 |
+| G4 | default | CP-B1 | D0 | 30 | n/a | 30 | 0 | 0 | 0 | 0 |
+| G4 | default | CP-B1 | D1 | 30 | 10 | 30 | 0 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | D2a (key reorder) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | D2b (string padding) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | D3 | 30 | 20 | 10 | 20 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | D4 | 30 | 20 | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | D5 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
 | G4 | default | CP-B2 | D6 (post-hoc) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | N1 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | N2 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-B2 | N3 | 30 | n/a | 0 | 0 | 0 | 0 | 30 |
+| G4 | default | CP-C | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-C | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-D | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-D | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-E | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
+| G4 | default | CP-E | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
 | G5 | default | CP-A | D0 | 30 | n/a | 0 | 0 | 0 | 30 | 0 |
 | G5 | default | CP-A | D1 | 30 | 10 | 0 | 0 | 0 | 30 | 0 |
 | G5 | default | CP-B1 | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G5 | default | CP-B1 | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
 | G5 | default | CP-B2 | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G5 | default | CP-B2 | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
+| G5 | default | CP-B2 | D2a (key reorder) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G5 | default | CP-B2 | D2b (string padding) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G5 | default | CP-B2 | D3 | 30 | 20 | 0 | 30 | 0 | 0 | 0 |
+| G5 | default | CP-B2 | D4 | 30 | 20 | 0 | 30 | 0 | 0 | 0 |
+| G5 | default | CP-B2 | D5 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
 | G5 | default | CP-B2 | D6 (post-hoc) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
 | G5 | default | CP-B2 | N1 | 30 | 30 | 0 | 0 | 0 | 0 | 30 |
 | G5 | default | CP-B2 | N2 | 30 | 30 | 0 | 0 | 0 | 0 | 30 |
@@ -122,7 +141,27 @@ All counts below derive from the committed experiment summary files (`full_resul
 | G5 | default | CP-D | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
 | G5 | default | CP-E | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
 | G5 | default | CP-E | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-A | D0 | 30 | n/a | 0 | 0 | 0 | 30 | 0 |
+| G7 (rule-based) | default | CP-A | D1 | 30 | 10 | 0 | 0 | 0 | 30 | 0 |
+| G7 (rule-based) | default | CP-B1 | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B1 | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B2 | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B2 | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B2 | D2a (key reorder) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B2 | D2b (string padding) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B2 | D3 | 30 | 20 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B2 | D4 | 30 | 20 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B2 | D5 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
 | G7 (rule-based) | default | CP-B2 | D6 (post-hoc) | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B2 | N1 | 30 | 30 | 0 | 20 | 0 | 0 | 10 |
+| G7 (rule-based) | default | CP-B2 | N2 | 30 | 30 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-B2 | N3 | 30 | n/a | 0 | 0 | 0 | 0 | 30 |
+| G7 (rule-based) | default | CP-C | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-C | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-D | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-D | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-E | D0 | 30 | n/a | 0 | 30 | 0 | 0 | 0 |
+| G7 (rule-based) | default | CP-E | D1 | 30 | 10 | 0 | 30 | 0 | 0 | 0 |
 
 **Note on G3a at CP-B1:** observed: after a dropped connection the library marks the call failed and the retry executes again; documented behavior: NOT CHECKED.
 

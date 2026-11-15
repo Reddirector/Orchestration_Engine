@@ -1,63 +1,75 @@
 #!/usr/bin/env python3
+import collections
 import json
 from pathlib import Path
+import sys
 import pandas as pd
 
 
 def load_committed_records(base_dir: Path) -> list[dict]:
     full_path = base_dir / "full_results.jsonl"
-    d2_path = base_dir / "d2_split_results.jsonl"
-    d6_path = base_dir / "d6_results.jsonl"
-
     records = []
 
-    # 1. Full results
     if full_path.exists():
         with open(full_path, "r", encoding="utf-8") as f:
             for line in f:
                 r = json.loads(line)
                 gid = r["guard_id"]
+                if gid == "G7":
+                    gid = "G7 (rule-based)"
                 cfg = "workaround" if "workaround" in gid or gid == "G3b" else "default"
+                raw_dt = r["drift_type"]
+                dt = raw_dt
+                if dt == "D2a":
+                    dt = "D2a (key reorder)"
+                elif dt == "D2b":
+                    dt = "D2b (string padding)"
+                elif dt == "D6":
+                    dt = "D6 (post-hoc)"
+
                 records.append({
                     "guard": gid,
                     "config": cfg,
                     "crash_point": r["crash_point"],
-                    "drift_type": r["drift_type"],
-                    "mutated": r.get("mutated", False),
-                    "outcome": r.get("target_outcome", ""),
-                })
-
-    # 2. D2 split results
-    if d2_path.exists():
-        with open(d2_path, "r", encoding="utf-8") as f:
-            for line in f:
-                r = json.loads(line)
-                dt = "D2a (key reorder)" if r["drift_type"] == "D2a" else "D2b (string padding)"
-                records.append({
-                    "guard": r["guard_id"],
-                    "config": "default",
-                    "crash_point": r["crash_point"],
                     "drift_type": dt,
-                    "mutated": r.get("mutated", False),
-                    "outcome": r.get("target_outcome", ""),
-                })
-
-    # 3. D6 results
-    if d6_path.exists():
-        with open(d6_path, "r", encoding="utf-8") as f:
-            for line in f:
-                r = json.loads(line)
-                gid = "G7 (rule-based)" if r["guard_id"] == "G7" else r["guard_id"]
-                records.append({
-                    "guard": gid,
-                    "config": "default",
-                    "crash_point": r["crash_point"],
-                    "drift_type": "D6 (post-hoc)",
+                    "raw_drift_type": raw_dt,
                     "mutated": r.get("mutated", False),
                     "outcome": r.get("target_outcome", ""),
                 })
 
     return records
+
+
+def check_consistency(records: list[dict]) -> list[str]:
+    by_guard_cp = collections.defaultdict(lambda: collections.defaultdict(list))
+    for r in records:
+        by_guard_cp[(r["guard"], r["crash_point"])][r["drift_type"]].append(r)
+
+    violations = []
+    for (guard, cp), dt_dict in sorted(by_guard_cp.items()):
+        if "D0" not in dt_dict:
+            continue
+        d0_counts = collections.Counter(r["outcome"] for r in dt_dict["D0"])
+        d0_total = len(dt_dict["D0"])
+        d0_dist = {k: v / d0_total for k, v in d0_counts.items()}
+
+        for dt, group in sorted(dt_dict.items()):
+            raw_dt = group[0].get("raw_drift_type", dt)
+            if not raw_dt.startswith("D") or raw_dt == "D0":
+                continue
+            non_mut = [r for r in group if not r["mutated"]]
+            if not non_mut:
+                continue
+            nm_counts = collections.Counter(r["outcome"] for r in non_mut)
+            nm_total = len(non_mut)
+            nm_dist = {k: v / nm_total for k, v in nm_counts.items()}
+
+            if nm_dist != d0_dist:
+                violations.append(
+                    f"Violation in {guard} at {cp} for {dt}: non-mutated dist {dict(nm_counts)} != D0 dist {dict(d0_counts)}"
+                )
+
+    return violations
 
 
 def generate_table(records: list[dict]) -> str:
@@ -90,7 +102,6 @@ def generate_table(records: list[dict]) -> str:
     df_cells = pd.DataFrame(cells)
 
     guard_order = {
-        "G0": 0,
         "G1": 1,
         "G1_workaround": 2,
         "G2": 3,
@@ -106,11 +117,13 @@ def generate_table(records: list[dict]) -> str:
         "D1": 1,
         "D2a (key reorder)": 2,
         "D2b (string padding)": 3,
-        "D4": 4,
-        "D6 (post-hoc)": 5,
-        "N1": 6,
-        "N2": 7,
-        "N3": 8,
+        "D3": 4,
+        "D4": 5,
+        "D5": 6,
+        "D6 (post-hoc)": 7,
+        "N1": 8,
+        "N2": 9,
+        "N3": 10,
     }
 
     df_cells["g_rank"] = df_cells["guard"].map(lambda x: guard_order.get(x, 99))
@@ -156,7 +169,7 @@ A benchmark testing idempotency guards against tool-call argument drift after cr
 
 ### What Was Tested
 - **Guards Tested:**
-  - Default configurations: `G0` (None), `G1` (`call4agents`), `G2` (`agentraas`), `G3a` (`idempotent-tools`), `G4` (`IntentGuard`), `G5` (`StepKey`), `G7 (rule-based)` (`SemanticAnalyzer`).
+  - Default configurations: `G1` (`call4agents`), `G2` (`agentraas`), `G3a` (`idempotent-tools`), `G4` (`IntentGuard`), `G5` (`StepKey`), `G7 (rule-based)` (`SemanticAnalyzer`).
   - Workaround configurations: `G1_workaround` (explicit business identifier key on `call4agents`), `G3b` (explicit business identifier key on `idempotent-tools`).
 - **Crash Points Evaluated (verbatim definitions from docs/DESIGN.md):**
   - CP-A: Guard recorded intent, service not yet called
@@ -168,7 +181,9 @@ A benchmark testing idempotency guards against tool-call argument drift after cr
   - `D0`: Exact argument replay.
   - `D1`: Numeric format and scale variation.
   - `D2a (key reorder)` and `D2b (string padding)`: Structural noise split.
+  - `D3`: Field re-ordering / omission.
   - `D4`: Volatile reference UUID and nonce regeneration.
+  - `D5`: Type casting / stringification.
   - `D6 (post-hoc)`: Batch compound envelope packaging.
   - Negative controls: `N1` (altered value), `N2` (altered recipient/customer), `N3` (distinct transaction intent).
 
@@ -196,13 +211,23 @@ def main():
     readme_path = repo_root / "README.md"
 
     records = load_committed_records(summary_dir)
+
+    violations = check_consistency(records)
+    if violations:
+        print(f"Consistency check FAILED: {len(violations)} violations found:")
+        for v in violations:
+            print("  " + v)
+        print("Stopping execution without modifying README.")
+        sys.exit(1)
+    else:
+        print("Consistency check PASSED: 0 violations found. All non-mutated drift trials match D0 distribution.")
+
     table_md = generate_table(records)
 
     readme_content = build_readme_content(table_md)
     readme_path.write_text(readme_content, encoding="utf-8")
 
     print(f"Generated {len(records)} records into {readme_path}")
-    print("\n" + table_md)
 
 
 if __name__ == "__main__":
