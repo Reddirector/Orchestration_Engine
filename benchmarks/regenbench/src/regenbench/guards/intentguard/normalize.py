@@ -26,6 +26,9 @@ def normalize_declared_args(tool_name: str, args: dict[str, Any]) -> dict[str, A
     - S2 email: to (lowercased), purpose
     - S3 tickets: customer_id, category
     """
+    if "batch" in args and isinstance(args["batch"], list) and len(args["batch"]) > 0:
+        args = args["batch"][0]
+
     res = {}
     if tool_name == "charge_card":
         res["order_id"] = str(args.get("order_id", "")).strip()

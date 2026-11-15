@@ -45,20 +45,34 @@ class SemanticAnalyzerGuard(Guard):
                 if kwargs
                 else (args[0] if args and isinstance(args[0], dict) else {"args": args})
             )
+            effective_dict = (
+                call_dict["batch"][0]
+                if "batch" in call_dict
+                and isinstance(call_dict["batch"], list)
+                and len(call_dict["batch"]) > 0
+                else call_dict
+            )
 
             # Check if current call is semantically identical to a logged call
             for prior in self.prior_calls:
                 if prior.get("tool_name") == tool_name:
                     p_args = prior.get("args", {})
+                    p_effective = (
+                        p_args["batch"][0]
+                        if "batch" in p_args
+                        and isinstance(p_args["batch"], list)
+                        and len(p_args["batch"]) > 0
+                        else p_args
+                    )
                     is_replay = False
                     if (
-                        "order_id" in call_dict
-                        and call_dict.get("order_id") == p_args.get("order_id")
-                        or "to" in call_dict
-                        and str(call_dict.get("to", "")).lower()
-                        == str(p_args.get("to", "")).lower()
-                        or "customer_id" in call_dict
-                        and call_dict.get("customer_id") == p_args.get("customer_id")
+                        "order_id" in effective_dict
+                        and effective_dict.get("order_id") == p_effective.get("order_id")
+                        or "to" in effective_dict
+                        and str(effective_dict.get("to", "")).lower()
+                        == str(p_effective.get("to", "")).lower()
+                        or "customer_id" in effective_dict
+                        and effective_dict.get("customer_id") == p_effective.get("customer_id")
                     ):
                         is_replay = True
 
