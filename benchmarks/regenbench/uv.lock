@@ -353,6 +353,31 @@ wheels = [
 ]
 
 [[package]]
+name = "orchestration-engine"
+version = "1.0.0"
+source = { editable = "../../" }
+
+[package.metadata]
+requires-dist = [
+    { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.0" },
+    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5.0" },
+    { name = "pyyaml", marker = "extra == 'yaml'", specifier = ">=6.0" },
+]
+provides-extras = ["yaml", "docs"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mkdocs", specifier = ">=1.6.1" },
+    { name = "mkdocs-material", specifier = ">=9.8.0" },
+    { name = "mypy", specifier = ">=2.3.0" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", specifier = ">=0.16.2" },
+    { name = "types-pyyaml", specifier = ">=6.0" },
+]
+
+[[package]]
 name = "packaging"
 version = "26.3"
 source = { registry = "https://pypi.org/simple" }
@@ -532,6 +557,7 @@ dependencies = [
     { name = "call4agents" },
     { name = "httpx" },
     { name = "idempotent-tools" },
+    { name = "orchestration-engine" },
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
@@ -566,6 +592,7 @@ requires-dist = [
     { name = "idempotent-tools", specifier = "==0.1.1" },
     { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.10.0" },
     { name = "numpy", marker = "extra == 'dev'", specifier = ">=2.2.2" },
+    { name = "orchestration-engine", editable = "../../" },
     { name = "pandas", marker = "extra == 'dev'", specifier = ">=2.2.3" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4" },

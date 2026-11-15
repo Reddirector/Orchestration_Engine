@@ -31,3 +31,12 @@ Recorded versions pinned in `pyproject.toml` and `uv.lock`:
   Exposes `protect(...)` and `Client(...)`.
   Requires an `agentraas_key` to connect to a proxy gateway (`base_url` default or self-hosted) which communicates via Redis to coordinate deduplication slots.
   For local hermetic benchmarking without cloud API keys, `G2` adapter simulates the server/client deduplication rule (exact request hash, SQLite/in-process store) and can connect to a local mock gateway endpoint if configured.
+
+## Guard Freezing and Held-Out Set
+- **Guard Freeze Point:** Guards `G4` (IntentGuard), `G5` (StepKey), and `G7` (SemanticAnalyzer) were frozen at commit `9e7efc1` on 2026-11-15 (tagged `guards-frozen` / `guards-frozen-v2` at `3e02ac8`). Subsequent commits only adjusted documented workaround adapters (`G1_workaround`, `G3b`) to extract business identifiers.
+- **Held-Out Mutator Set (D6):** The D6 held-out mutator set and 3 new variants per D1-D5 (`heldout_mutators.py`) were authored on 2026-11-15 (commit `28c7b75` in the benchmark repository, integrated in commit `48248e3`).
+
+## Documented Workaround Configurations
+- **G1_workaround (`call4agents`):** Uses explicit `c4a_key` set to the business identifier (`order_id`, `to`, `customer_id`), bypassing volatile reference fields or numeric format drift.
+- **G3b (`idempotent-tools`):** Configured with custom `key_fn` that extracts the business identifier (`order_id`, `to`, `customer_id`) rather than hashing the full argument payload.
+

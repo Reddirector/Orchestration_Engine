@@ -37,11 +37,16 @@ Across 1,260 multi-process trials (with real `os._exit` worker kills and an out-
 | **G1 (`call4agents`)** | Exact Args | **0.0%** | **33.3%** | **100.0%** | **66.7%** | **66.7%** | **33.3%** |
 | **G2 (`agentraas`)** | Exact Args | **0.0%** | **33.3%** | **100.0%** | **66.7%** | **66.7%** | **33.3%** |
 | **G3a (`idempotent-tools`)** | Exact Args | **0.0%** | **33.3%** | **100.0%** | **66.7%** | **66.7%** | **33.3%** |
-| **G5 (StepKey)** | Run + Step Index | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** |
+| **G5 (StepKey)** | Run + Step Index | Outcomes (CP-B2, D0-D5): 120 trials, 0 DUP, 120 OK, 0 LOST, 0 HALT, 0 FALSE_BLOCK. Negative controls (N1-N3): 90 trials, 0 OK, 90 FALSE_BLOCK. |
 | **G4 (IntentGuard)** | Intent Key | **0.0%** | **0.0%** | **0.0%** | **33.3%** | **0.0%** | **0.0%** |
 | **G7 (Analyzer Baseline)** | Semantic | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** | **0.0%** |
 
 *(95% Wilson Confidence Intervals: for 0/30 cells, upper bound is 0.1000; for 10/30 cells, CI is [0.1923, 0.5122]; for 20/30 cells, CI is [0.4878, 0.8077]; for 30/30 cells, CI is [0.8865, 1.0000]).*
+
+### G5 Outcome Breakdown and CP-A Lost Effects Note
+- **CP-B2 (Post-commit worker crash):** Across D0 to D5, G5 achieves 0 duplicate side effects (0 DUP, 120 OK) because step indexes match sequentially. However, on negative controls (N1, N2, N3), G5 yields a 100% false-block rate (90 FALSE_BLOCK out of 90 trials) because distinct business requests sharing the same step position are unconditionally collapsed.
+- **CP-A (Pre-service crash):** When the crash occurs after intent recording but before the service call is made, G5 suffers 100% lost effects (60 LOST out of 60 trials on D0 and D1). The resumed worker finds the step index already claimed in the step database, assumes completion, and skips execution without the effect ever reaching the downstream service.
+
 
 ---
 

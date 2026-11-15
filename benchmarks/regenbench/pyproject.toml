@@ -11,7 +11,11 @@ dependencies = [
     "call4agents==0.7.2",
     "agentraas==0.16.0",
     "idempotent-tools==0.1.1",
+    "orchestration-engine",
 ]
+
+[tool.uv.sources]
+orchestration-engine = { path = "../..", editable = true }
 
 [project.optional-dependencies]
 dev = [
