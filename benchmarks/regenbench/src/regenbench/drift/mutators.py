@@ -35,6 +35,18 @@ class DriftMutator:
             res["_metadata"] = {"client_retry": True, "trace_hop": rng.randint(1, 5)}
             return res
 
+        elif drift_id == "D2a":  # Key reorder only
+            keys = list(res.keys())
+            if len(keys) > 1:
+                keys = list(reversed(keys))
+            return {k: res[k] for k in keys}
+
+        elif drift_id == "D2b":  # Whitespace only
+            for text_key in ["subject", "body", "title", "reference"]:
+                if text_key in res and isinstance(res[text_key], str):
+                    res[text_key] = f"  {res[text_key]}  "
+            return res
+
         elif drift_id == "D3":  # Free-text paraphrase
             paraphrases = [
                 ("Invoice", "Billing statement"),

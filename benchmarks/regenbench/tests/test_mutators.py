@@ -25,6 +25,24 @@ def test_d2_structure_noise():
     assert m2["a"] == 1 and m2["b"] == 2 and m2["c"] == 3
 
 
+def test_d2a_key_reorder_only():
+    args = {"order_id": "ord_1", "amount": 1000, "currency": "USD"}
+    m2a = DriftMutator.mutate("D2a", args, seed=1)
+    # Keys reordered, but same key-value pairs
+    assert list(m2a.keys()) != list(args.keys())
+    assert m2a == args
+
+
+def test_d2b_whitespace_only():
+    args = {"order_id": "ord_1", "subject": "Invoice #100", "body": "Please pay"}
+    m2b = DriftMutator.mutate("D2b", args, seed=1)
+    # Whitespace variation introduced into text fields
+    assert m2b["order_id"] == "ord_1"
+    assert m2b["subject"] != args["subject"] or m2b["body"] != args["body"]
+    assert m2b["subject"].strip() == args["subject"].strip()
+
+
+
 def test_d3_free_text_paraphrase():
     args = {"to": "alice@example.com", "subject": "Invoice #123", "body": "Please find attached."}
     m3 = DriftMutator.mutate("D3", args, seed=3)

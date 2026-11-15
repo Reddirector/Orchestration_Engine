@@ -1,28 +1,14 @@
 # PREREG_AMENDMENTS.md
 
 **Date:** 2026-11-15  
-**Document:** Deviations from `docs/PREREG.md` (frozen `prereg-v1`).
+**Document:** Methodological amendments and deviations from `docs/PREREG.md` (`prereg-v1`).
 
----
+## Matrix Deviations & Amendments Table
 
-## Deviations in Pilot Matrix Execution
-
-1. **Crash Points:**
-   - *PREREG.md specification:* Planned matrix at `CP-B2`.
-   - *Executed matrix:* Pilot sweep initially focused on `CP-B2` (hard OS worker exit after service commit).
-   - *Amendment:* Full benchmark matrix must explicitly run `CP-A`, `CP-B1`, `CP-B2`, `CP-C`, `CP-D`, and `CP-E` across all guards.
-
-2. **Sample Sizes & Drift Types:**
-   - *PREREG.md specification:* 20 seeds across `D0`, `D1`, `D4`.
-   - *Executed matrix:* Expanded to `D0` through `D5` at 10 seeds for full guard sweep, yielding 30 trials per (guard, drift_type) cell across the 3 scenarios.
-   - *Amendment:* Record exact seed allocation and cell trials explicitly per variant rather than pooling across scenarios.
-
-3. **Guard Configurations (Default vs. Documented Workaround):**
-   - *PREREG.md specification:* Evaluate both default and documented workaround configs (`G1_workaround`, `G2_workaround`, `G3b`).
-   - *Executed matrix:* The initial pilot table pooled third-party guards in default configuration only.
-   - *Amendment:* Explicitly evaluate and report default and documented-workaround configurations side by side for all third-party guards (`G1`, `G2`, `G3a` vs `G1_workaround`, `G2_workaround`, `G3b`).
-
-4. **Negative Controls (N1, N2, N3):**
-   - *PREREG.md specification:* False-block evaluation on `N1` and `N2`.
-   - *Executed matrix:* Negative controls were evaluated via unit tests but omitted from the consolidated summary matrix.
-   - *Amendment:* Add `N1`, `N2`, and `N3` to the reporting matrix across all guards to measure false-block rate directly.
+| Item | PREREG Specification (Line) | Executed Matrix | Reason for Deviation |
+|---|---|---|---|
+| **Sample Size / Trial Counts** | Line 29: "Seeds per cell: 20 distinct seeds per (guard, scenario, drift_type) cell for the pilot sweep." (yielding 60 per 3-scenario aggregate) | Core cells (`D0`, `D1`, `D4` on `G0`, `G1`, `G2`, `G3a`, `G5`) ran 30 seeds per scenario (90 trials pooled across `S1`, `S2`, `S3`). Expanded drift types (`D2`, `D3`, `D5`) and guards `G4`, `G7` ran 10 seeds per scenario (30 trials pooled, 10 per individual cell). | The 10 vs 30 vs 90 apparent discrepancy reflects pooling across scenarios: 10 seeds * 3 scenarios = 30 trials; 30 seeds * 3 scenarios = 90 trials. Core types were allocated 30 seeds/cell to increase statistical power before Gate 1, while expanded types used 10 seeds/cell to bound execution overhead. |
+| **Crash Points** | Line 27: "Crash Points: CP-B2 (Hard OS worker kill after service commit)" | Pilot matrix focused execution at `CP-B2`. A dedicated validation sweep ran all crash points (`CP-A`, `CP-B1`, `CP-B2`, `CP-C`, `CP-D`, `CP-E`) across `G0`, `G1`, and `G4`. | Verifies that guards behave consistently across pre-service crash (`CP-A`), during-transport cut (`CP-B1`), post-commit crash (`CP-B2`), worker crash during control (`CP-C`), crash prior to worker exit (`CP-D`), and crash after result receipt (`CP-E`). |
+| **Drift Taxonomy Scope** | Line 28: "Drift Types: D0 (Control), D1 (Numeric format), D4 (Volatile UUID/reference)" | Expanded to evaluate `D0`, `D1`, `D2`, `D3`, `D4`, and `D5`. Added sub-mutators `D2a` (key reorder only) and `D2b` (whitespace only). | Broadens test coverage beyond initial pilot types to assess free-text paraphrase, email aliases, structure noise, key order, and whitespace. |
+| **Guard Configurations** | Line 24: "Baselines & Workarounds: G0 (none), G1_workaround, G2_workaround, G3b, G5 (stepkey), G6 (server_key)" | Initial pilot matrix evaluated default configurations (`G0`, `G1`, `G2`, `G3a`, `G4`, `G5`, `G7`). Workarounds (`G1_workaround`, `G2_workaround`, `G3b`) were subsequently benchmarked separately. | Preserves clear separation between out-of-the-box defaults and documented user workarounds (such as custom key functions or salted context). |
+| **Negative Controls** | Line 10: "...while maintaining a false-block rate on negative controls N1 and N2 below 1.0%." | Added `N1` (altered amount), `N2` (altered recipient), and `N3` (explicit second identical request) across all guards. | Measures false-block rate directly across all guards to prevent trivial 100% deduplication by unconditional blocking. |
