@@ -8,6 +8,14 @@ from idempotent_tools import SQLiteBackend, idempotent
 from regenbench.guards.base import Guard, HaltInfo
 
 
+def extract_business_id(args: tuple, kwargs: dict) -> str:
+    d = kwargs if kwargs else (args[0] if args and isinstance(args[0], dict) else {})
+    for k in ("order_id", "to", "customer_id"):
+        if k in d:
+            return str(d[k])
+    return str(d)
+
+
 class IdempotentToolsAdapter(Guard):
     name: str = "G3_idempotent_tools"
     version: str = "0.1.1"
@@ -30,6 +38,11 @@ class IdempotentToolsAdapter(Guard):
         db_path = str(workdir / "idempotent_tools.sqlite")
         self.backend = SQLiteBackend(db_path=db_path)
 
+    def compute_key(self, tool_name: str, args: tuple, kwargs: dict) -> str:
+        if self.mode == "context":
+            return extract_business_id(args, kwargs)
+        return f"{self.run_id}:{tool_name}"
+
     def wrap(
         self,
         tool_name: str,
@@ -37,9 +50,9 @@ class IdempotentToolsAdapter(Guard):
         intent_schema: dict[str, Any] | None = None,
     ) -> Callable[..., Any]:
         if self.mode == "context":
-            # Workaround G3b: keying ignores drifted argument payload by using step/task context
+            # Workaround G3b: keying uses business identifier
             def key_fn(f, a, kw, ctx):
-                return f"{self.run_id}:{tool_name}:{ctx}"
+                return self.compute_key(tool_name, a, kw)
 
             decorated = idempotent(
                 fn,

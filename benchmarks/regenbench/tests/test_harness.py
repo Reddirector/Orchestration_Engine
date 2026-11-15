@@ -114,3 +114,15 @@ def test_intentguard_and_analyzer_survive_drift(tmp_path: Path):
     # G4 (IntentGuard) negative controls: N1 (different amount) must execute
     r_g4_n1 = runner.run_trial("S1", "G4", "CP-B2", "N1", seed=53, workdir=tmp_path / "t_g4_n1")
     assert r_g4_n1.control_outcome == ControlOutcome.OK
+
+
+def test_negative_control_n1_classification(tmp_path: Path):
+    runner = TrialRunner(results_path=tmp_path / "results_neg.jsonl")
+
+    # G5 on N1 keys only on step index, so it falsely blocks the legitimate N1 call
+    res_g5 = runner.run_trial("S1", "G5", "CP-B2", "N1", seed=42, workdir=tmp_path / "g5_n1")
+    assert res_g5.target_outcome == TargetOutcome.FALSE_BLOCK
+
+    # G1 on N1 sees different amount, so it allows the call and commits once -> OK (never DUP)
+    res_g1 = runner.run_trial("S1", "G1", "CP-B2", "N1", seed=42, workdir=tmp_path / "g1_n1")
+    assert res_g1.target_outcome == TargetOutcome.OK

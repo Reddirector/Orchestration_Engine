@@ -135,6 +135,18 @@ def main():
         guard.on_resume(args.run_id)
         mutated_args = DriftMutator.mutate(args.drift_type, target_step.args, seed=args.seed)
 
+        if args.drift_type in ("N1", "N2", "N3"):
+            n_intent_id = f"{target_step.intent.intent_id}_{args.drift_type}"
+            wrapped_target = guard.wrap(
+                target_step.tool_name,
+                lambda c_args: execute_call(
+                    args.service_url,
+                    target_step.tool_name,
+                    c_args,
+                    intent_id=n_intent_id,
+                ),
+            )
+
         try:
             wrapped_target(mutated_args)
         except Exception:

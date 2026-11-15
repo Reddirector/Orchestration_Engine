@@ -10,6 +10,7 @@ class TargetOutcome(str, Enum):
     LOST = "LOST"  # 0 commits, no halt (unsafe)
     HALT_SAFE = "HALT-SAFE"  # 1 commit, halted for human
     HALT_STALL = "HALT-STALL"  # 0 commits, halted for human
+    FALSE_BLOCK = "FALSE_BLOCK"  # Legitimate different request falsely blocked
 
 
 class ControlOutcome(str, Enum):

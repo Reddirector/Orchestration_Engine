@@ -1,0 +1,16 @@
+full_matrix:
+  guards_core: ["G0", "G1", "G2", "G3a", "G5"]
+  crash_points: ["CP-A", "CP-B1", "CP-B2", "CP-C", "CP-D", "CP-E"]
+  drifts: ["D0", "D1"]
+  scenarios: ["S1", "S2", "S3"]
+  seeds: 10
+  neg_controls: ["N1", "N2", "N3"]
+  workaround_guards: ["G1_workaround", "G3b"]
+  workaround_drifts: ["D0", "D1", "D4"]
+
+d2_split:
+  guards: ["G0", "G1", "G2", "G3a"]
+  drifts: ["D2a", "D2b"]
+  scenarios: ["S1", "S2", "S3"]
+  seeds: 10
+  crash_point: "CP-B2"
